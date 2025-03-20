@@ -1,0 +1,445 @@
+/* Estilos para o PDV moderno */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #0f172a;
+    --accent-color: #ef4444;
+    --light-gray: #f3f4f6;
+    --medium-gray: #e5e7eb;
+    --dark-gray: #4b5563;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --white: #ffffff;
+    --black: #000000;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --transition: all 0.3s ease;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f9fafb;
+    color: var(--secondary-color);
+    margin: 0;
+    padding: 0;
+}
+
+.pdv-container {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 1rem;
+    min-height: 100vh;
+}
+
+.pdv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--secondary-color);
+    color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1rem;
+}
+
+.pdv-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pdv-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.system-status {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-online {
+    color: var(--success-color);
+}
+
+.pdv-main {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+}
+
+.pdv-left {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pdv-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pdv-section {
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+
+.pdv-section-title {
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.75rem 1rem;
+    background-color: var(--primary-color);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pdv-input-group {
+    padding: 1rem;
+}
+
+.pdv-input-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.pdv-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+
+.pdv-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.pdv-input-with-button {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pdv-input-with-button .pdv-input {
+    flex: 1;
+}
+
+.pdv-button {
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.pdv-button:hover {
+    filter: brightness(1.1);
+}
+
+.pdv-button-primary {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.pdv-button-secondary {
+    background-color: var(--secondary-color);
+    color: var(--white);
+}
+
+.pdv-button-accent {
+    background-color: var(--accent-color);
+    color: var(--white);
+}
+
+.pdv-button-success {
+    background-color: var(--success-color);
+    color: var(--white);
+}
+
+.pdv-button-warning {
+    background-color: var(--warning-color);
+    color: var(--black);
+}
+
+.pdv-button-group {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.75rem;
+}
+
+.product-container {
+    padding: 1rem;
+}
+
+.pdv-product-info {
+    padding: 1rem;
+    border: 1px solid var(--light-gray);
+    border-radius: var(--border-radius);
+    background-color: var(--light-gray);
+}
+
+.pdv-product-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.pdv-product-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.pdv-product-code {
+    font-size: 0.9rem;
+    color: var(--dark-gray);
+}
+
+.pdv-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pdv-table th, 
+.pdv-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.pdv-table th {
+    background-color: var(--light-gray);
+    font-weight: 600;
+}
+
+.pdv-table tr:hover {
+    background-color: var(--light-gray);
+}
+
+.pdv-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--secondary-color);
+    color: var(--white);
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.pdv-customer-info {
+    padding: 1rem;
+    background-color: var(--light-gray);
+    border-radius: var(--border-radius);
+}
+
+.pdv-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.pdv-info-row:last-child {
+    margin-bottom: 0;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.pdv-message-highlighted {
+    text-align: center;
+    padding: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-radius: var(--border-radius);
+    margin: 0.5rem 1rem;
+}
+
+.pdv-message-primary {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.pdv-message-accent {
+    background-color: var(--accent-color);
+    color: var(--white);
+}
+
+.pdv-message-success {
+    background-color: var(--success-color);
+    color: var(--white);
+}
+
+.pdv-message-warning {
+    background-color: var(--warning-color);
+    color: var(--black);
+}
+
+/* Footer com atalhos */
+.pdv-footer {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-top: auto;
+}
+
+.pdv-shortcuts {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pdv-shortcut {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.pdv-shortcut:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+}
+
+.pdv-shortcut i {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.pdv-shortcut span {
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+/* Estilos para o modal de configurações */
+.color-options {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.color-option {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: var(--transition);
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.selected {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Temas */
+.tema-dark {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+}
+
+.tema-light {
+    background-color: #ffffff;
+    color: #333333;
+}
+
+/* Utilitários */
+.d-none {
+    display: none !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.ml-2 {
+    margin-left: 0.5rem !important;
+}
+
+.mt-2 {
+    margin-top: 0.5rem !important;
+}
+
+/* Line clamp para descrições de produtos */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .pdv-main {
+        flex-direction: column;
+    }
+    
+    .pdv-shortcuts {
+        flex-wrap: wrap;
+    }
+    
+    .pdv-shortcut {
+        flex: 1 0 50%;
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .pdv-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pdv-status {
+        margin-top: 0.5rem;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .pdv-table {
+        font-size: 0.85rem;
+    }
+    
+    .pdv-table th, 
+    .pdv-table td {
+        padding: 0.5rem;
+    }
+    
+    .pdv-shortcut {
+        flex: 1 0 100%;
+    }
+}

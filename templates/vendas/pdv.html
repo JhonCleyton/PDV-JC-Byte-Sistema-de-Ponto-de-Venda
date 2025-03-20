@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid pdv-container">
+    <div class="row">
+        <!-- Área de Entrada e Total -->
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" id="inputProduto" class="form-control form-control-lg" 
+                                   placeholder="Quantidade*Código (ex: 3*123 ou 0,35*1254)" autofocus>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="total-display">
+                                <h2>TOTAL: R$ <span id="totalVenda">0,00</span></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Itens -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="itemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Produto</th>
+                                    <th>Qtd</th>
+                                    <th>Un</th>
+                                    <th>Preço Un.</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Atalhos e Informações -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Atalhos</h5>
+                    <div class="list-group">
+                        <button class="list-group-item list-group-item-action" id="consultarPreco">
+                            F2 - Consultar Preço/Estoque
+                        </button>
+                        <button class="list-group-item list-group-item-action" id="consultarDividas">
+                            F3 - Consultar/Pagar Dívidas
+                        </button>
+                        <button class="list-group-item list-group-item-action" id="retiradaCaixa">
+                            F5 - Retirada de Caixa
+                        </button>
+                        <button class="list-group-item list-group-item-action" id="finalizarVenda">
+                            F4 - Finalizar Venda
+                        </button>
+                    </div>
+
+                    <!-- Informações do Cliente (opcional) -->
+                    <div class="mt-4">
+                        <h5 class="card-title">Cliente (opcional)</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="matriculaCliente" placeholder="Matrícula">
+                            <button class="btn btn-outline-secondary" type="button" id="buscarCliente">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <div id="infoCliente" class="d-none">
+                            <p><strong>Nome:</strong> <span id="nomeCliente"></span></p>
+                            <p><strong>Limite Disponível:</strong> R$ <span id="limiteDisponivel">0,00</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Consulta de Preço -->
+<div class="modal fade" id="modalConsultaPreco" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Consulta de Preço e Estoque</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="codigoConsulta" 
+                           placeholder="Digite o código ou nome do produto">
+                    <button class="btn btn-primary" type="button" id="buscarProduto">Buscar</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Unidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaConsultaPreco">
+                            <!-- Resultados serão inseridos aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Consulta de Dívidas -->
+<div class="modal fade" id="modalConsultaDividas" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Consulta de Dívidas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="matriculaDividas" placeholder="Matrícula do Cliente">
+                    <button class="btn btn-primary" id="buscarDividas">Buscar</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="tabelaDividas">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Valor Total</th>
+                                <th>Valor Pago</th>
+                                <th>Valor Restante</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Pagamento de Dívida -->
+<div class="modal fade" id="modalPagamentoDivida" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pagamento de Dívida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="dividaId">
+                <div class="mb-3">
+                    <label class="form-label">Valor a Pagar</label>
+                    <input type="number" class="form-control" id="valorPagamento" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Forma de Pagamento</label>
+                    <select class="form-select" id="formaPagamentoDivida">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="pix">PIX</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="pagarDivida">Confirmar Pagamento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Finalização de Venda -->
+<div class="modal fade" id="modalFinalizarVenda" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Finalizar Venda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Total da Venda</label>
+                    <input type="text" class="form-control" id="totalVendaFinal" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Forma de Pagamento</label>
+                    <select class="form-select" id="formaPagamento" onchange="toggleParcelas()">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="pix">PIX</option>
+                        <option value="crediario">Crediário</option>
+                    </select>
+                </div>
+                <div id="divParcelas" class="mb-3 d-none">
+                    <label class="form-label">Número de Parcelas</label>
+                    <select class="form-select" id="numParcelas">
+                        <option value="1">1x</option>
+                        <option value="2">2x</option>
+                        <option value="3">3x</option>
+                        <option value="4">4x</option>
+                        <option value="5">5x</option>
+                        <option value="6">6x</option>
+                        <option value="7">7x</option>
+                        <option value="8">8x</option>
+                        <option value="9">9x</option>
+                        <option value="10">10x</option>
+                        <option value="11">11x</option>
+                        <option value="12">12x</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Valor Recebido</label>
+                    <input type="number" class="form-control" id="valorRecebido" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Troco</label>
+                    <input type="text" class="form-control" id="trocoVenda" readonly>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmarVenda">Confirmar Venda</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Venda Sem Limite -->
+<div class="modal fade" id="modalConfirmSemLimite" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Atenção: Cliente Sem Limite</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span id="msgSemLimite"></span>
+                </div>
+                
+                <p>Para prosseguir com esta venda, é necessária a autorização de um supervisor.</p>
+                
+                <form id="formAutorizacao">
+                    <div class="mb-3">
+                        <label class="form-label">Usuário</label>
+                        <input type="text" class="form-control" id="authUser" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="authPass" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnAutorizar">Autorizar Venda</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Retirada de Caixa -->
+<div class="modal fade" id="modalRetiradaCaixa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Retirada de Caixa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Valor da Retirada</label>
+                    <input type="number" class="form-control" id="valorRetirada" step="0.01" min="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Motivo da Retirada</label>
+                    <select class="form-select" id="motivoRetirada">
+                        <option value="pagamento_fornecedor">Pagamento de Fornecedor</option>
+                        <option value="troco">Retirada para Troco</option>
+                        <option value="despesa">Pagamento de Despesa</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="divOutroMotivo" style="display: none;">
+                    <label class="form-label">Especifique o Motivo</label>
+                    <input type="text" class="form-control" id="outroMotivoRetirada">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Autorizador</label>
+                    <select class="form-select" id="autorizadorRetirada">
+                        <option value="">Selecione um autorizador</option>
+                        <!-- Autorizadores serão carregados dinamicamente -->
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha do Autorizador</label>
+                    <input type="password" class="form-control" id="senhaAutorizador">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmarRetirada">Confirmar Retirada</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/busca_cliente.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pdv.js') }}"></script>
+<script>
+    // Configuração de variáveis iniciais
+    let carrinho = [];
+    let clienteSelecionado = null;
+    let totalVenda = 0;
+    let caixaAberto = false;
+    let caixaId = null;
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        verificarCaixaAberto();
+        
+        // Inicializa os modais do Bootstrap
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => new bootstrap.Modal(modal));
+
+        // Atalhos de teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F2') {
+                e.preventDefault();
+                document.getElementById('consultarPreco').click();
+            } else if (e.key === 'F3') {
+                e.preventDefault();
+                document.getElementById('consultarDividas').click();
+            } else if (e.key === 'F4') {
+                e.preventDefault();
+                document.getElementById('finalizarVenda').click();
+            } else if (e.key === 'F5') {
+                e.preventDefault();
+                document.getElementById('retiradaCaixa').click();
+            }
+        });
+
+        // Handlers para os botões
+        document.getElementById('consultarPreco').addEventListener('click', abrirModalConsultaPreco);
+        document.getElementById('consultarDividas').addEventListener('click', abrirModalConsultaDividas);
+        document.getElementById('finalizarVenda').addEventListener('click', abrirModalFinalizarVenda);
+        document.getElementById('retiradaCaixa').addEventListener('click', abrirModalRetiradaCaixa);
+        
+        // Listeners para o form de retirada de caixa
+        document.getElementById('motivoRetirada').addEventListener('change', function() {
+            const divOutroMotivo = document.getElementById('divOutroMotivo');
+            if (this.value === 'outro') {
+                divOutroMotivo.style.display = 'block';
+            } else {
+                divOutroMotivo.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('confirmarRetirada').addEventListener('click', confirmarRetiradaCaixa);
+                
+        // Restante do seu JavaScript atual...
+    });
+    
+    // Verifica se existe um caixa aberto
+    function verificarCaixaAberto() {
+        fetch('/caixa/verificar-aberto')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    caixaAberto = data.aberto;
+                    caixaId = data.caixa_id;
+                    
+                    // Desabilitar ou habilitar botões dependendo do status do caixa
+                    const btnRetiradaCaixa = document.getElementById('retiradaCaixa');
+                    if (!caixaAberto) {
+                        btnRetiradaCaixa.classList.add('disabled');
+                        btnRetiradaCaixa.title = 'É necessário abrir o caixa primeiro';
+                    } else {
+                        btnRetiradaCaixa.classList.remove('disabled');
+                        btnRetiradaCaixa.title = '';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao verificar status do caixa:', error);
+            });
+    }
+    
+    // Abre o modal de retirada de caixa
+    function abrirModalRetiradaCaixa() {
+        if (!caixaAberto) {
+            toastr.error('Você precisa abrir o caixa antes de fazer uma retirada.');
+            return;
+        }
+        
+        // Limpar formulário
+        document.getElementById('valorRetirada').value = '';
+        document.getElementById('motivoRetirada').value = 'pagamento_fornecedor';
+        document.getElementById('outroMotivoRetirada').value = '';
+        document.getElementById('senhaAutorizador').value = '';
+        document.getElementById('divOutroMotivo').style.display = 'none';
+        
+        // Carregar lista de autorizadores
+        fetch('/caixa/autorizadores')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const select = document.getElementById('autorizadorRetirada');
+                    // Limpar opções existentes, mantendo apenas a primeira
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    
+                    // Adicionar novas opções
+                    data.autorizadores.forEach(auth => {
+                        const option = document.createElement('option');
+                        option.value = auth.id;
+                        option.textContent = `${auth.nome} (${auth.role == 'admin' ? 'Administrador' : 'Gerente'})`;
+                        select.appendChild(option);
+                    });
+                    
+                    // Abrir o modal
+                    const modalRetirada = new bootstrap.Modal(document.getElementById('modalRetiradaCaixa'));
+                    modalRetirada.show();
+                } else {
+                    toastr.error('Erro ao carregar autorizadores: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar autorizadores:', error);
+                toastr.error('Erro ao carregar a lista de autorizadores. Verifique sua conexão.');
+            });
+    }
+    
+    // Confirma a retirada de caixa
+    function confirmarRetiradaCaixa() {
+        const valor = document.getElementById('valorRetirada').value;
+        const motivo = document.getElementById('motivoRetirada').value;
+        const outroMotivo = document.getElementById('outroMotivoRetirada').value;
+        const autorizadorId = document.getElementById('autorizadorRetirada').value;
+        const senha = document.getElementById('senhaAutorizador').value;
+        
+        // Validações
+        if (!valor || parseFloat(valor) <= 0) {
+            toastr.error('Informe um valor válido para a retirada.');
+            return;
+        }
+        
+        if (!autorizadorId) {
+            toastr.error('Selecione um autorizador para a retirada.');
+            return;
+        }
+        
+        if (!senha) {
+            toastr.error('Informe a senha do autorizador.');
+            return;
+        }
+        
+        // Preparar dados para enviar
+        const motivoFinal = motivo === 'outro' ? outroMotivo : motivo;
+        const data = {
+            valor: parseFloat(valor),
+            motivo: motivoFinal,
+            autorizador_id: parseInt(autorizadorId),
+            senha: senha
+        };
+        
+        // Enviar requisição
+        fetch(`/caixa/retirada/${caixaId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Retirada realizada com sucesso!');
+                // Fechar o modal
+                const modalRetirada = bootstrap.Modal.getInstance(document.getElementById('modalRetiradaCaixa'));
+                modalRetirada.hide();
+            } else {
+                toastr.error(data.error || 'Ocorreu um erro na retirada.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao processar retirada:', error);
+            toastr.error('Erro ao processar a retirada. Verifique sua conexão.');
+        });
+    }
+    
+    // Seu código JavaScript atual...
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.pdv-container {
+    padding: 20px;
+}
+
+.total-display {
+    background-color: #000;
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: right;
+}
+
+.total-display h2 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+#itemsTable {
+    font-size: 1.1rem;
+}
+
+.list-group-item {
+    cursor: pointer;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

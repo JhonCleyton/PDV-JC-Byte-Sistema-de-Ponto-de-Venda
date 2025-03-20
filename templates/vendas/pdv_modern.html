@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDV - JC Byte</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pdv.css') }}">
+</head>
+<body>
+    <div class="pdv-container">
+        <!-- Cabeçalho -->
+        <header class="pdv-header">
+            <div class="pdv-title">
+                <i class="fas fa-cash-register"></i>
+                <span>PDV SYSTEM</span>
+            </div>
+            <div class="pdv-status">
+                <div class="system-status status-online">
+                    <i class="fas fa-circle"></i>
+                    <span>Online</span>
+                </div>
+                <span class="ml-2">Operador: {{ current_user.name if current_user.name else current_user.username }}</span>
+                <span class="ml-2" id="current-time">
+                    <i class="fas fa-clock"></i>
+                    {{ now.strftime('%d/%m/%Y %H:%M:%S') }}
+                </span>
+            </div>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="pdv-main">
+            <!-- Painel Esquerdo -->
+            <div class="pdv-left">
+                <!-- Área de entrada de produto -->
+                <section class="pdv-section">
+                    <div class="pdv-section-title">
+                        <i class="fas fa-barcode"></i>
+                        <span>Entrada de Produtos</span>
+                    </div>
+                    <div class="pdv-input-group">
+                        <label for="product-input" class="pdv-input-label">Quantidade*Código ou Código</label>
+                        <input type="text" id="product-input" class="pdv-input" placeholder="Digite o código do produto ou quantidade*código" autofocus>
+                    </div>
+                </section>
+
+                <!-- Exibição do Produto Atual (simplificada, sem imagem) -->
+                <section class="pdv-section" id="current-product-section">
+                    <div class="pdv-section-title">
+                        <i class="fas fa-box"></i>
+                        <span>Produto Selecionado</span>
+                    </div>
+                    <div class="product-container" id="current-product">
+                        <div class="pdv-product-info">
+                            <div class="pdv-product-name">Selecione um produto</div>
+                            <div class="pdv-product-price">R$ 0,00</div>
+                            <div class="pdv-product-code">Código: -</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Lista de Itens -->
+                <section class="pdv-section">
+                    <div class="pdv-section-title">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Itens da Venda</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="pdv-table" id="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Produto</th>
+                                    <th>Qtde</th>
+                                    <th>Valor Unit.</th>
+                                    <th>Subtotal</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-table-body">
+                                <!-- Os itens serão inseridos aqui via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pdv-total">
+                        <span>TOTAL:</span>
+                        <span id="total-amount">R$ 0,00</span>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Painel Direito -->
+            <div class="pdv-right">
+                <!-- Informações do Cliente -->
+                <section class="pdv-section">
+                    <div class="pdv-section-title">
+                        <i class="fas fa-user"></i>
+                        <span>Cliente</span>
+                    </div>
+                    <div class="pdv-input-group">
+                        <label for="customer-input" class="pdv-input-label">Matrícula do Cliente</label>
+                        <div class="pdv-input-with-button">
+                            <input type="text" id="customer-input" class="pdv-input" placeholder="Digite a matrícula do cliente">
+                            <button id="btn-search-customer" class="pdv-button pdv-button-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="customer-info" class="pdv-customer-info d-none">
+                        <div class="pdv-info-row">
+                            <span>Nome:</span>
+                            <span id="customer-name">-</span>
+                        </div>
+                        <div class="pdv-info-row">
+                            <span>Limite:</span>
+                            <span id="customer-limit">R$ 0,00</span>
+                        </div>
+                        <div class="pdv-info-row">
+                            <span>Disponível:</span>
+                            <span id="customer-available">R$ 0,00</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Mensagem Destacada -->
+                <section class="pdv-section">
+                    <div id="highlighted-message" class="pdv-message-highlighted pdv-message-accent">
+                        CAIXA OCUPADO
+                    </div>
+                </section>
+
+                <!-- Ações Principais -->
+                <section class="pdv-section">
+                    <div class="pdv-section-title">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span>Ações de Venda</span>
+                    </div>
+                    <div class="pdv-button-group">
+                        <button id="btn-finish-sale" class="pdv-button pdv-button-success">
+                            <i class="fas fa-check-circle"></i>
+                            Finalizar Venda (F4)
+                        </button>
+                        <button id="btn-cancel-sale" class="pdv-button pdv-button-accent">
+                            <i class="fas fa-times-circle"></i>
+                            Cancelar Venda
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Rodapé com Atalhos Rápidos -->
+        <footer class="pdv-footer">
+            <div class="pdv-shortcuts">
+                <div class="pdv-shortcut" id="btn-config-toggle">
+                    <i class="fas fa-cog"></i>
+                    <span>Configurações</span>
+                </div>
+                <div class="pdv-shortcut" id="btn-price-inquiry">
+                    <i class="fas fa-tag"></i>
+                    <span>Consultar Preço (F2)</span>
+                </div>
+                <div class="pdv-shortcut" id="btn-customer-inquiry">
+                    <i class="fas fa-user-check"></i>
+                    <span>Consultar Cliente (F3)</span>
+                </div>
+                <div class="pdv-shortcut" id="btn-debt-inquiry">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>Consultar Fiado</span>
+                </div>
+                <div class="pdv-shortcut" id="btn-withdrawal">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Retirada de Caixa</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal de Configurações -->
+    <div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="configModalLabel">Configurações do PDV</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="config-theme" class="form-label">Tema</label>
+                        <select id="config-theme" class="form-select">
+                            <option value="default">Padrão</option>
+                            <option value="dark">Escuro</option>
+                            <option value="light">Claro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cor Primária</label>
+                        <div class="color-options">
+                            <div class="color-option" data-color="#2563eb" style="background-color: #2563eb;"></div>
+                            <div class="color-option" data-color="#10b981" style="background-color: #10b981;"></div>
+                            <div class="color-option" data-color="#ef4444" style="background-color: #ef4444;"></div>
+                            <div class="color-option" data-color="#f59e0b" style="background-color: #f59e0b;"></div>
+                            <div class="color-option" data-color="#8b5cf6" style="background-color: #8b5cf6;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="config-message" class="form-label">Mensagem Destacada</label>
+                        <input type="text" id="config-message" class="form-control" value="CAIXA OCUPADO">
+                    </div>
+                    <div class="mb-3">
+                        <label for="config-message-color" class="form-label">Cor da Mensagem</label>
+                        <select id="config-message-color" class="form-select">
+                            <option value="primary">Azul</option>
+                            <option value="accent">Vermelho</option>
+                            <option value="success">Verde</option>
+                            <option value="warning">Amarelo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-save-config">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Consulta de Preço -->
+    <div class="modal fade" id="priceInquiryModal" tabindex="-1" aria-labelledby="priceInquiryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="priceInquiryModalLabel">Consulta de Preço</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="price-inquiry-input" class="form-label">Código do Produto</label>
+                        <input type="text" class="form-control" id="price-inquiry-input" placeholder="Digite o código do produto">
+                    </div>
+                    <div id="price-inquiry-result" class="d-none">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title" id="price-inquiry-product-name">Nome do Produto</h5>
+                                <p class="card-text" id="price-inquiry-product-code">Código: 0000</p>
+                                <p class="card-text fs-4 fw-bold text-primary" id="price-inquiry-product-price">R$ 0,00</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="btn-search-price">Consultar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Consulta de Cliente -->
+    <div class="modal fade" id="customerInquiryModal" tabindex="-1" aria-labelledby="customerInquiryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="customerInquiryModalLabel">Consulta de Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="customer-inquiry-input" class="form-label">Matrícula do Cliente</label>
+                        <input type="text" class="form-control" id="customer-inquiry-input" placeholder="Digite a matrícula do cliente">
+                    </div>
+                    <div id="customer-inquiry-result" class="d-none">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title" id="customer-inquiry-name">Nome do Cliente</h5>
+                                <p class="card-text" id="customer-inquiry-registration">Matrícula: 0000</p>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <p class="card-text">Limite:</p>
+                                        <p class="fw-bold" id="customer-inquiry-limit">R$ 0,00</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="card-text">Dívida:</p>
+                                        <p class="fw-bold text-danger" id="customer-inquiry-debt">R$ 0,00</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="card-text">Disponível:</p>
+                                        <p class="fw-bold text-success" id="customer-inquiry-available">R$ 0,00</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="btn-search-customer-modal">Consultar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Consulta de Fiado -->
+    <div class="modal fade" id="debtInquiryModal" tabindex="-1" aria-labelledby="debtInquiryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="debtInquiryModalLabel">Consulta de Fiado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="debt-inquiry-input" class="form-label">Matrícula do Cliente</label>
+                        <input type="text" class="form-control" id="debt-inquiry-input" placeholder="Digite a matrícula do cliente">
+                    </div>
+                    <div id="debt-inquiry-result" class="d-none">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="debt-inquiry-name">Nome do Cliente</h5>
+                                <p class="card-text" id="debt-inquiry-registration">Matrícula: 0000</p>
+                                <p class="card-text">Total Devido: <span class="fw-bold text-danger" id="debt-inquiry-total">R$ 0,00</span></p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Vencimento</th>
+                                        <th>Valor Total</th>
+                                        <th>Valor Pago</th>
+                                        <th>Valor Restante</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="debt-inquiry-table-body">
+                                    <!-- Os itens serão inseridos aqui via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="btn-search-debt">Consultar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Pagamento de Dívida -->
+    <div class="modal fade" id="debtPaymentModal" tabindex="-1" aria-labelledby="debtPaymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="debtPaymentModalLabel">Pagamento de Dívida</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Valor Total da Dívida</label>
+                        <div class="form-control bg-light" id="debt-payment-total">R$ 0,00</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="debt-payment-amount" class="form-label">Valor a Pagar</label>
+                        <input type="text" class="form-control" id="debt-payment-amount" placeholder="0,00">
+                    </div>
+                    <div class="mb-3">
+                        <label for="debt-payment-method" class="form-label">Forma de Pagamento</label>
+                        <select class="form-select" id="debt-payment-method">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="cartao_debito">Cartão de Débito</option>
+                            <option value="cartao_credito">Cartão de Crédito</option>
+                            <option value="pix">PIX</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="btn-confirm-debt-payment">Confirmar Pagamento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Pagamento -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="paymentModalLabel">Pagamento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Total da Venda</label>
+                        <div class="form-control bg-light fs-4 fw-bold" id="payment-total">R$ 0,00</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment-method" class="form-label">Forma de Pagamento</label>
+                        <select class="form-select" id="payment-method">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="cartao_debito">Cartão de Débito</option>
+                            <option value="cartao_credito">Cartão de Crédito</option>
+                            <option value="pix">PIX</option>
+                            <option value="fiado">Fiado</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Campos para Dinheiro -->
+                    <div id="cash-payment-fields">
+                        <div class="mb-3">
+                            <label for="received-amount" class="form-label">Valor Recebido</label>
+                            <input type="text" class="form-control" id="received-amount" placeholder="0,00">
+                        </div>
+                        <div class="mb-3">
+                            <label for="change-amount" class="form-label">Troco</label>
+                            <input type="text" class="form-control bg-light" id="change-amount" value="R$ 0,00" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para Cartão de Crédito -->
+                    <div id="credit-payment-fields" class="d-none">
+                        <div class="mb-3">
+                            <label for="installments" class="form-label">Número de Parcelas</label>
+                            <select class="form-select" id="installments">
+                                <option value="1">1x</option>
+                                <option value="2">2x</option>
+                                <option value="3">3x</option>
+                                <option value="4">4x</option>
+                                <option value="5">5x</option>
+                                <option value="6">6x</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para Fiado -->
+                    <div id="fiado-payment-fields" class="d-none">
+                        <div id="fiado-customer-info" class="card mb-3 d-none">
+                            <div class="card-body">
+                                <h6 class="card-title">Informações do Cliente</h6>
+                                <p class="card-text">Nome: <span id="fiado-customer-name">-</span></p>
+                                <p class="card-text">Limite Disponível: <span id="fiado-customer-available">R$ 0,00</span></p>
+                            </div>
+                        </div>
+                        <div id="fiado-limit-exceeded" class="alert alert-warning d-none">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            O cliente não possui limite suficiente. É necessária autorização.
+                        </div>
+                        <button type="button" class="btn btn-warning" id="btn-authorize-sale">
+                            <i class="fas fa-lock"></i> Autorizar Venda
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="btn-confirm-payment">Confirmar Pagamento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Autorização -->
+    <div class="modal fade" id="authorizationModal" tabindex="-1" aria-labelledby="authorizationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="authorizationModalLabel">Autorização de Venda</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Esta venda requer autorização por exceder o limite de crédito do cliente.
+                    </div>
+                    <div class="mb-3">
+                        <label for="auth-username" class="form-label">Usuário</label>
+                        <input type="text" class="form-control" id="auth-username" placeholder="Nome de usuário">
+                    </div>
+                    <div class="mb-3">
+                        <label for="auth-password" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="auth-password" placeholder="Senha">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btn-confirm-authorization">Autorizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Retirada de Caixa -->
+    <div class="modal fade" id="withdrawalModal" tabindex="-1" aria-labelledby="withdrawalModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="withdrawalModalLabel">Retirada de Caixa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="withdrawal-amount" class="form-label">Valor da Retirada</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="text" class="form-control" id="withdrawal-amount" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="withdrawal-reason" class="form-label">Motivo da Retirada</label>
+                        <textarea class="form-control" id="withdrawal-reason" rows="3" placeholder="Explique o motivo da retirada"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="withdrawal-authorizer" class="form-label">Autorizador</label>
+                        <select class="form-select" id="withdrawal-authorizer">
+                            <option value="">Selecione um autorizador</option>
+                            <!-- Será preenchido via JavaScript -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="withdrawal-password" class="form-label">Senha do Autorizador</label>
+                        <input type="password" class="form-control" id="withdrawal-password" placeholder="Digite a senha">
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> A retirada precisa ser autorizada por um gerente ou administrador.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btn-confirm-withdrawal">Confirmar Retirada</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/pdv_modern.js') }}"></script>
+    
+    <!-- Footer com Copyright -->
+    <div class="footer mt-4 py-3">
+        <div class="container text-center">
+            <small class="text-muted">
+                &copy; 2024 JC Byte. Todos os direitos reservados.
+            </small>
+        </div>
+    </div>
+</body>
+</html>

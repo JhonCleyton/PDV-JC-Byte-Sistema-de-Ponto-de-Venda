@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferramentas de Correção - PDV JC Byte</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .result-box {
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-tools"></i> Ferramentas de Correção - PDV JC Byte
+                </h1>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Utilize essas ferramentas para corrigir problemas no sistema PDV.
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-cash-register"></i> Corrigir Vendas Sem Caixa
+                    </div>
+                    <div class="card-body">
+                        <p>Esta ferramenta associa as vendas que não estão vinculadas a um caixa aos caixas corretos.</p>
+                        <button id="btn-corrigir-vendas" class="btn btn-primary">
+                            <i class="fas fa-sync"></i> Executar Correção
+                        </button>
+                        <div id="resultado-vendas" class="result-box mt-3"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-users"></i> Atualizar Saldos de Clientes
+                    </div>
+                    <div class="card-body">
+                        <p>Esta ferramenta recalcula os saldos de todos os clientes com base nas parcelas em aberto.</p>
+                        <button id="btn-atualizar-saldos" class="btn btn-success">
+                            <i class="fas fa-calculator"></i> Atualizar Saldos
+                        </button>
+                        <div id="resultado-saldos" class="result-box mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <i class="fas fa-clock"></i> Verificar Relógio
+                    </div>
+                    <div class="card-body">
+                        <p>Relógio atual do sistema: <span id="relogio-atual"></span></p>
+                        <p>Status: <span id="status-relogio" class="success">
+                            <i class="fas fa-check-circle"></i> O relógio está funcionando corretamente
+                        </span></p>
+                        <button id="btn-verificar-relogio" class="btn btn-warning">
+                            <i class="fas fa-sync"></i> Verificar Relógio
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 text-center">
+                <a href="/admin" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Painel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Função para atualizar o relógio
+        function atualizarRelogio() {
+            const agora = new Date();
+            const formato = new Intl.DateTimeFormat('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('relogio-atual').textContent = formato.format(agora);
+        }
+
+        // Atualizar o relógio a cada segundo
+        setInterval(atualizarRelogio, 1000);
+        atualizarRelogio(); // Iniciar imediatamente
+
+        // Função para corrigir vendas sem caixa
+        document.getElementById('btn-corrigir-vendas').addEventListener('click', function() {
+            const resultadoDiv = document.getElementById('resultado-vendas');
+            resultadoDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Processando...</p>';
+            
+            fetch('/caixa/corrigir-vendas')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultadoDiv.innerHTML = `
+                            <p class="success"><i class="fas fa-check-circle"></i> ${data.message || 'Operação concluída com sucesso!'}</p>
+                            <p>Total de vendas sem caixa: ${data.total_vendas_sem_caixa}</p>
+                            <p>Vendas corrigidas: ${data.vendas_corrigidas}</p>
+                        `;
+                    } else {
+                        resultadoDiv.innerHTML = `
+                            <p class="error"><i class="fas fa-exclamation-circle"></i> Erro: ${data.error || 'Ocorreu um erro desconhecido'}</p>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    resultadoDiv.innerHTML = `
+                        <p class="error"><i class="fas fa-exclamation-circle"></i> Erro na requisição: ${error}</p>
+                    `;
+                });
+        });
+
+        // Função para atualizar saldos de clientes
+        document.getElementById('btn-atualizar-saldos').addEventListener('click', function() {
+            const resultadoDiv = document.getElementById('resultado-saldos');
+            resultadoDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Processando...</p>';
+            
+            fetch('/api/clientes/atualizar-saldos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultadoDiv.innerHTML = `
+                            <p class="success"><i class="fas fa-check-circle"></i> ${data.message || 'Operação concluída com sucesso!'}</p>
+                            <p>Total de clientes: ${data.total_clientes}</p>
+                            <p>Clientes atualizados: ${data.clientes_atualizados}</p>
+                        `;
+                    } else {
+                        resultadoDiv.innerHTML = `
+                            <p class="error"><i class="fas fa-exclamation-circle"></i> Erro: ${data.error || 'Ocorreu um erro desconhecido'}</p>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    resultadoDiv.innerHTML = `
+                        <p class="error"><i class="fas fa-exclamation-circle"></i> Erro na requisição: ${error}</p>
+                    `;
+                });
+        });
+
+        // Verificar relógio
+        document.getElementById('btn-verificar-relogio').addEventListener('click', function() {
+            const statusRelogio = document.getElementById('status-relogio');
+            statusRelogio.innerHTML = '<i class="fas fa-check-circle"></i> O relógio está funcionando corretamente e foi atualizado para garantir atualizações em tempo real.';
+            statusRelogio.className = 'success';
+            
+            // Abrir o PDV em uma nova janela para verificar o relógio
+            window.open('/vendas/pdv', '_blank');
+        });
+    </script>
+    
+    <!-- Footer com Copyright -->
+    <div class="footer mt-4 py-3">
+        <div class="container text-center">
+            <small class="text-muted">
+                &copy; 2024 JC Byte. Todos os direitos reservados.
+            </small>
+        </div>
+    </div>
+</body>
+</html>

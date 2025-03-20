@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Listagem de Caixas{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Gerenciamento de Caixas</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('caixa.listar_caixas') }}" class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="data_inicio" class="form-label">Data Inicial</label>
+                        <input type="date" class="form-control" id="data_inicio" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="data_fim" class="form-label">Data Final</label>
+                        <input type="date" class="form-control" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Filtrar</button>
+                        <a href="{{ url_for('caixa.listar_caixas') }}" class="btn btn-outline-secondary">Limpar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Caixas</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Operador</th>
+                            <th>Data Abertura</th>
+                            <th>Data Fechamento</th>
+                            <th>Valor Inicial</th>
+                            <th>Valor Final</th>
+                            <th>Valor Esperado</th>
+                            <th>Diferença</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for caixa in caixas %}
+                        <tr>
+                            <td>{{ caixa.id }}</td>
+                            <td>{{ caixa.user.name if caixa.user else 'Desconhecido' }}</td>
+                            <td>{{ caixa.opening_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ caixa.closing_date.strftime('%d/%m/%Y %H:%M') if caixa.closing_date else 'Em aberto' }}</td>
+                            <td>R$ {{ "%.2f"|format(caixa.opening_amount) }}</td>
+                            <td>R$ {{ "%.2f"|format(caixa.closing_amount) if caixa.closing_amount else '-' }}</td>
+                            <td>R$ {{ "%.2f"|format(caixa.expected_amount) if caixa.expected_amount else '-' }}</td>
+                            <td>
+                                {% if caixa.difference %}
+                                    {% if caixa.difference > 0 %}
+                                        <span class="text-success">R$ {{ "%.2f"|format(caixa.difference) }}</span>
+                                    {% elif caixa.difference < 0 %}
+                                        <span class="text-danger">R$ {{ "%.2f"|format(caixa.difference) }}</span>
+                                    {% else %}
+                                        R$ {{ "%.2f"|format(caixa.difference) }}
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if caixa.status == 'open' %}
+                                    <span class="badge bg-success">Aberto</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Fechado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('caixa.relatorio_caixa', caixa_id=caixa.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                                <button class="btn btn-sm btn-secondary btn-imprimir" data-id="{{ caixa.id }}">
+                                    <i class="bi bi-printer"></i> Imprimir
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center">Nenhum registro de caixa encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Botão imprimir relatório
+    document.querySelectorAll('.btn-imprimir').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const caixaId = this.getAttribute('data-id');
+            fetch(`/caixa/imprimir/${caixaId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        toastr.success(data.message);
+                    } else {
+                        toastr.error(data.error);
+                    }
+                })
+                .catch(err => {
+                    toastr.error('Erro ao enviar para impressão');
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

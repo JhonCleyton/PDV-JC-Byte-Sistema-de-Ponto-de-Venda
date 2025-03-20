@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <!-- Vendas Hoje -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Vendas (hoje)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="today-sales">
+                                R$ {{ "%.2f"|format(total_sales) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendas Semana -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Vendas (semana)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="week-sales">
+                                R$ {{ "%.2f"|format(month_revenue) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clientes -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Clientes Ativos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="active-customers">
+                                {{ active_customers }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Produtos -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Produtos em Baixa
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="low-stock">
+                                {{ low_stock }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Gráfico de Vendas -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Vendas dos Últimos 12 Meses</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Produtos -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top 5 Produtos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie">
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financeiro -->
+    <div class="row">
+        <!-- Contas a Receber -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Contas a Receber</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-4">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (received/total_receivables*100) if total_receivables > 0 else 0 }}%"></div>
+                    </div>
+                    <p>Total: R$ {{ "%.2f"|format(total_receivables) }}</p>
+                    <p>Recebido: R$ {{ "%.2f"|format(received) }}</p>
+                    <p>Pendente: R$ {{ "%.2f"|format(pending_receivables) }}</p>
+                    <p class="text-danger">Vencido: R$ {{ "%.2f"|format(total_overdue) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contas a Pagar -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Contas a Pagar</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-4">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ (paid/total_payables*100) if total_payables > 0 else 0 }}%"></div>
+                    </div>
+                    <p>Total: R$ {{ "%.2f"|format(total_payables) }}</p>
+                    <p>Pago: R$ {{ "%.2f"|format(paid) }}</p>
+                    <p>Pendente: R$ {{ "%.2f"|format(pending_payables) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão para ferramentas de correção -->
+    <div class="container-fluid py-2">
+        <div class="row">
+            <div class="col-12">
+                <div class="card bg-warning text-white shadow">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <i class="fas fa-tools fa-lg mr-2"></i>
+                                <strong>Ferramentas de Correção do Sistema</strong>
+                                <p class="mb-0 mt-2">
+                                    Utilize essas ferramentas para corrigir problemas com vendas sem caixa, 
+                                    saldos de clientes e outros problemas do PDV.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <a href="{{ url_for('management.correcoes_sistema') }}" class="btn btn-light">
+                                    <i class="fas fa-wrench"></i> Acessar Ferramentas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Gráficos -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var ctx = document.getElementById('salesChart').getContext('2d');
+        var salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ last_12_months|tojson }},
+                datasets: [{
+                    label: 'Vendas',
+                    data: {{ sales_by_month|tojson }},
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointBorderColor: 'rgba(78, 115, 223, 1)',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 12
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            maxTicksLimit: 5,
+                            padding: 10,
+                            callback: function(value) {
+                                return 'R$ ' + value;
+                            }
+                        },
+                        grid: {
+                            color: "rgb(234, 236, 244)",
+                            zeroLineColor: "rgb(234, 236, 244)",
+                            drawBorder: false,
+                            borderDash: [2],
+                            zeroLineBorderDash: [2]
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: "rgb(255,255,255)",
+                        bodyFontColor: "#858796",
+                        titleMarginBottom: 10,
+                        titleFontColor: '#6e707e',
+                        titleFontSize: 14,
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        xPadding: 15,
+                        yPadding: 15,
+                        displayColors: false,
+                        intersect: false,
+                        mode: 'index',
+                        caretPadding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += 'R$ ' + context.parsed.y.toFixed(2);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Gráfico de produtos
+        var ctxProducts = document.getElementById('productsChart').getContext('2d');
+        var productsChart = new Chart(ctxProducts, {
+            type: 'pie',
+            data: {
+                labels: {{ top_products|map(attribute='name')|list|tojson }},
+                datasets: [{
+                    data: {{ top_products|map(attribute='total_quantity')|list|tojson }},
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            fontSize: 10,
+                            boxWidth: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.raw;
+                                var total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                var percentage = Math.round((value / total) * 100);
+                                return label + ': ' + value + ' unidades (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Atualização automática dos dados do dashboard
+        function atualizarDados() {
+            fetch('/management/api/dashboard/today')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        // Atualiza os valores dos cards
+                        document.getElementById('today-sales').textContent = 'R$ ' + data.data.sales.toFixed(2);
+                        document.getElementById('week-sales').textContent = 'R$ ' + data.data.sales_last_7_days.toFixed(2);
+                        document.getElementById('active-customers').textContent = data.data.active_customers;
+                        document.getElementById('low-stock').textContent = data.data.low_stock;
+                        
+                        // Atualiza os valores de recebíveis
+                        var recTotal = data.data.receivables.total;
+                        var recReceived = data.data.receivables.received;
+                        var recPending = data.data.receivables.pending;
+                        var recOverdue = data.data.receivables.overdue;
+                        
+                        // Atualiza textos - usando seletores mais precisos para evitar erros
+                        var cards = document.querySelectorAll('.card');
+                        for (var i = 0; i < cards.length; i++) {
+                            var card = cards[i];
+                            
+                            // Contas a receber
+                            if (card.textContent.includes('Contas a Receber')) {
+                                var paragraphs = card.querySelectorAll('p');
+                                for (var j = 0; j < paragraphs.length; j++) {
+                                    var p = paragraphs[j];
+                                    if (p.textContent.includes('Total')) {
+                                        p.textContent = 'Total: R$ ' + recTotal.toFixed(2);
+                                    } else if (p.textContent.includes('Recebido')) {
+                                        p.textContent = 'Recebido: R$ ' + recReceived.toFixed(2);
+                                    } else if (p.textContent.includes('Pendente')) {
+                                        p.textContent = 'Pendente: R$ ' + recPending.toFixed(2);
+                                    } else if (p.textContent.includes('Vencido')) {
+                                        p.textContent = 'Vencido: R$ ' + recOverdue.toFixed(2);
+                                    }
+                                }
+                                
+                                // Atualiza barra de progresso
+                                var progressBar = card.querySelector('.progress-bar');
+                                if (progressBar && recTotal > 0) {
+                                    progressBar.style.width = ((recReceived/recTotal)*100) + '%';
+                                }
+                            }
+                            
+                            // Contas a pagar
+                            if (card.textContent.includes('Contas a Pagar')) {
+                                var paragraphs = card.querySelectorAll('p');
+                                for (var j = 0; j < paragraphs.length; j++) {
+                                    var p = paragraphs[j];
+                                    if (p.textContent.includes('Total')) {
+                                        p.textContent = 'Total: R$ ' + data.data.payables.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Atualiza o gráfico de produtos
+                        if (data.data.top_products && productsChart) {
+                            // Atualiza os dados do gráfico
+                            productsChart.data.labels = data.data.top_products.labels;
+                            productsChart.data.datasets[0].data = data.data.top_products.data;
+                            productsChart.update();
+                        }
+                        
+                        console.log('Dashboard atualizado com sucesso:', data);
+                    } else {
+                        console.error('Erro ao atualizar dashboard:', data.error);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Erro na requisição:', error);
+                });
+        }
+        
+        // Atualiza a cada 60 segundos
+        setInterval(atualizarDados, 60000);
+        
+        // Executa imediatamente quando o documento estiver carregado
+        atualizarDados();
+    });
+    </script>
+{% endblock %}

@@ -1,0 +1,982 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pdv_professional.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dialogo-confirmacao.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block content %}
+<!-- Cabeçalho superior -->
+<div class="pdv-header">
+    <h1><img src="{{ url_for('static', filename='logo_merc.png') }}" alt="Logo" style="height: 30px; margin-right: 10px;"> </h1>
+    <div class="header-info">
+        <div class="status">
+            <i class="fas fa-circle"></i>
+            <span>Online</span>
+        </div>
+        <div class="operator">
+            <i class="fas fa-user"></i>
+            <span>{{ current_user.name if current_user.name else current_user.username }}</span>
+        </div>
+        <div class="time" id="current-time">
+            {{ now.strftime('%d/%m/%Y %H:%M:%S') }}
+        </div>
+        <div class="cash-actions">
+            <button id="btnAbrirFecharCaixa" class="btn btn-warning btn-sm" data-status="closed">
+                <i class="fas fa-money-bill-wave"></i> <span id="btnCaixaText">Abrir Caixa</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Status do Caixa -->
+<div class="caixa-status caixa-livre" id="caixa-status">
+    CAIXA LIVRE
+</div>
+
+<!-- Área principal do PDV -->
+<div class="pdv-container">
+    <div class="row g-3">
+        <!-- Coluna 1: Entrada de Produtos e Produto Atual -->
+        <div class="col-md-4">
+            <!-- Entrada de Produtos -->
+            <div class="pdv-card mb-3">
+                <div class="pdv-card-header">
+                    <h2><i class="fas fa-barcode"></i> Entrada de Produtos</h2>
+                </div>
+                <div class="pdv-card-body">
+                    <div class="product-input-container">
+                        <div class="input-wrapper">
+                            <i class="fas fa-barcode"></i>
+                            <input type="text" id="inputProduto" class="product-input" 
+                                placeholder="Quantidade*Código (ex: 3*123 ou 0,35*1254)" autofocus>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Produto Atual -->
+            <div class="pdv-card produto-atual mb-3">
+                <div class="pdv-card-header">
+                    <h2><i class="fas fa-shopping-basket"></i> Produto Atual</h2>
+                </div>
+                <div class="pdv-card-body">
+                    <div class="produto-info">
+                        <span class="nome-produto" id="nome-produto-atual">Nenhum produto selecionado</span>
+                        <span class="codigo-produto" id="codigo-produto-atual">--</span>
+                    </div>
+                    <div class="preco-produto" id="preco-produto-atual">R$ 0,00</div>
+                </div>
+            </div>
+
+            <!-- Total da Venda -->
+            <div class="pdv-card mb-3">
+                <div class="pdv-card-header">
+                    <h2><i class="fas fa-money-bill-wave"></i> Total da Venda</h2>
+                </div>
+                <div class="pdv-card-body">
+                    <div class="total-container">
+                        <div class="total-label">R$</div>
+                        <div class="total-value" id="totalVenda">0,00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="pdv-card mb-3">
+                <div class="pdv-card-header">
+                    <h2><i class="fas fa-star"></i> Ações Rápidas</h2>
+                </div>
+                <div class="pdv-card-body">
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" id="consultarPreco">
+                            <div class="icon-container"><i class="fas fa-search-dollar"></i></div>
+                            <span>Consultar Preço</span>
+                            <div class="shortcut">F2</div>
+                        </button>
+                        <button class="quick-action-btn" id="consultarCliente">
+                            <div class="icon-container"><i class="fas fa-user-check"></i></div>
+                            <span>Cliente</span>
+                            <div class="shortcut">F3</div>
+                        </button>
+                        <button class="quick-action-btn" id="consultarDividas">
+                            <div class="icon-container"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <span>Dívidas</span>
+                            <div class="shortcut">F8</div>
+                        </button>
+                        <button class="quick-action-btn" id="retiradaCaixa">
+                            <div class="icon-container"><i class="fas fa-cash-register"></i></div>
+                            <span>Retirada de Caixa</span>
+                            <div class="shortcut">F5</div>
+                        </button>
+                        <button class="quick-action-btn primary" id="finalizarVenda">
+                            <div class="icon-container"><i class="fas fa-check-circle"></i></div>
+                            <span>Finalizar</span>
+                            <div class="shortcut">F4</div>
+                        </button>
+                        <button class="quick-action-btn danger" id="cancelarVenda">
+                            <div class="icon-container"><i class="fas fa-times-circle"></i></div>
+                            <span>Cancelar</span>
+                            <div class="shortcut">F10</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna 2: Cupom Fiscal -->
+        <div class="col-md-8">
+            <div class="pdv-card">
+                <div class="pdv-card-header">
+                    <h2><i class="fas fa-receipt"></i> Cupom Fiscal</h2>
+                </div>
+                <div class="pdv-card-body">
+                    <div class="table-responsive cupom-area">
+                        <table class="table" id="itemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Produto</th>
+                                    <th class="text-center">Qtde</th>
+                                    <th>Unid.</th>
+                                    <th>Preço</th>
+                                    <th>Total</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Informações do Cliente -->
+                    <div class="cliente-info d-none mt-3" id="infoCliente">
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-user"></i> Cliente: <span id="nomeCliente"></span></h5>
+                            <p class="mb-0">Limite Disponível: R$ <span id="limiteDisponivel"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Container para mensagens -->
+    <div id="mensagens" class="position-fixed bottom-0 end-0 p-3"></div>
+</div>
+
+<!-- Modal de Consulta de Preço -->
+<div class="modal fade" id="modalConsultaPreco" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-search-dollar"></i> Consulta de Preços</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                    <input type="text" class="form-control" id="codigoConsulta" placeholder="Digite o código ou nome do produto">
+                    <button class="btn btn-primary" type="button" id="buscarProduto"><i class="fas fa-search"></i> Buscar</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="resultadoConsulta">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Produto</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Finalizar Venda -->
+<div class="modal fade" id="modalFinalizarVenda" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-check-circle"></i> Finalizar Venda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Total da Venda</label>
+                    <div class="form-control bg-light fw-bold">R$ <span id="modalTotal">0,00</span></div>
+                </div>
+                <div class="mb-3">
+                    <label for="formaPagamento" class="form-label">Forma de Pagamento</label>
+                    <select class="form-select" id="formaPagamento" onchange="toggleParcelas()">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="pix">PIX</option>
+                        <option value="crediario">Fiado (Cliente)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="valorPago" class="form-label">Valor Pago</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" class="form-control" id="valorPago" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="mb-3 d-none" id="divTroco">
+                    <label class="form-label">Troco</label>
+                    <div class="form-control bg-light fw-bold">R$ <span id="valorTroco">0,00</span></div>
+                </div>
+                <div class="mb-3 d-none" id="divParcelas">
+                    <label for="numParcelas" class="form-label">Número de Parcelas</label>
+                    <select class="form-select" id="numParcelas">
+                        <option value="1">1x</option>
+                        <option value="2">2x</option>
+                        <option value="3">3x</option>
+                        <option value="4">4x</option>
+                        <option value="5">5x</option>
+                        <option value="6">6x</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="confirmarVenda"><i class="fas fa-check"></i> Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Consulta de Dívidas -->
+<div class="modal fade" id="modalConsultaDividas" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-invoice-dollar"></i> Consulta de Dívidas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" class="form-control" id="clienteDividas" placeholder="Digite a matrícula ou nome do cliente">
+                    <button class="btn btn-primary" type="button" id="buscarDividas"><i class="fas fa-search"></i> Buscar</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tabelaDividas">
+                        <thead>
+                            <tr>
+                                <th>Vencimento</th>
+                                <th>Valor</th>
+                                <th>Pago</th>
+                                <th>Restante</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Pagamento de Dívida -->
+<div class="modal fade" id="modalPagamentoDivida" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hand-holding-usd"></i> Pagamento de Dívida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="dividaId">
+                <div class="mb-3">
+                    <label class="form-label">Valor Total da Dívida</label>
+                    <div class="alert alert-info mb-3">
+                        R$ <span id="valorDivida">0.00</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="valorPagamento" class="form-label">Valor do Pagamento</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" class="form-control" id="valorPagamento" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="formaPagamentoDivida" class="form-label">Forma de Pagamento</label>
+                    <select class="form-select" id="formaPagamentoDivida">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="pix">PIX</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="confirmarPagamento"><i class="fas fa-check"></i> Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Autorização para Venda sem Limite -->
+<div class="modal fade" id="modalConfirmSemLimite" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Autorização Necessária</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <p id="msgSemLimite">O cliente não possui limite disponível para esta venda. É necessária uma autorização.</p>
+                </div>
+                <form id="formAutorizacao">
+                    <div class="mb-3">
+                        <label for="usuarioAutorizacao" class="form-label">Usuário</label>
+                        <input type="text" class="form-control" id="usuarioAutorizacao" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="senhaAutorizacao" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="senhaAutorizacao" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmarAutorizacao"><i class="fas fa-key"></i> Autorizar</button>
+                <button type="button" class="btn btn-warning" id="confirmarSemAutorizacao"><i class="fas fa-exclamation-triangle"></i> Confirmar sem Autorização</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cliente -->
+<div class="modal fade" id="modalConsultaCliente" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-check"></i> Selecionar Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                    <input type="text" class="form-control" id="clienteMatricula" placeholder="Digite a matrícula do cliente">
+                    <button class="btn btn-primary" type="button" id="buscarCliente"><i class="fas fa-search"></i> Buscar</button>
+                </div>
+                <div id="clienteResultado" class="mt-3 d-none">
+                    <div class="alert alert-info">
+                        <h5 id="clienteResultadoNome"></h5>
+                        <p class="mb-0">Limite Disponível: R$ <span id="clienteResultadoLimite"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="selecionarCliente">Selecionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Abertura de Caixa -->
+<div class="modal fade" id="modalAberturaCaixa" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAberturaCaixaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAberturaCaixaLabel">Abertura de Caixa</h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Para iniciar o PDV, é necessário realizar a abertura do caixa.
+                </div>
+                <form id="formAberturaCaixa">
+                    <div class="mb-3">
+                        <label for="valorInicial" class="form-label">Valor Inicial em Caixa (R$)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="valorInicial" placeholder="0.00" required>
+                        <div class="form-text">Informe o valor em dinheiro que está iniciando no caixa.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnAbrirCaixa">Abrir Caixa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Fechamento de Caixa -->
+<div class="modal fade" id="modalFechamentoCaixa" tabindex="-1" aria-labelledby="modalFechamentoCaixaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="modalFechamentoCaixaLabel">Fechamento de Caixa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Atenção! Ao fechar o caixa, o sistema será bloqueado até uma nova abertura.
+                </div>
+                <form id="formFechamentoCaixa">
+                    <div class="mb-3">
+                        <label for="valorFinal" class="form-label">Valor Final em Caixa (R$)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="valorFinal" placeholder="0.00" required>
+                        <div class="form-text">Informe o valor em dinheiro que está atualmente no caixa.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="btnFecharCaixa">Fechar Caixa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Retirada de Caixa -->
+<div class="modal fade" id="modalRetiradaCaixa" tabindex="-1" aria-labelledby="modalRetiradaCaixaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalRetiradaCaixaLabel">Retirada de Caixa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formRetiradaCaixa">
+                    <div class="mb-3">
+                        <label for="valorRetirada" class="form-label">Valor a Retirar (R$)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="valorRetirada" placeholder="0.00" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="motivoRetirada" class="form-label">Motivo da Retirada</label>
+                        <input type="text" class="form-control" id="motivoRetirada" placeholder="Ex: Pagamento de fornecedor" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="autorizadorRetirada" class="form-label">Autorizador</label>
+                        <select class="form-control" id="autorizadorRetirada" required>
+                            <option value="">Selecione o autorizador</option>
+                            <!-- Será preenchido via JavaScript -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="senhaAutorizador" class="form-label">Senha do Autorizador</label>
+                        <input type="password" class="form-control" id="senhaAutorizador" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnRetirarCaixa">Confirmar Retirada</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Lembrete de Fechamento -->
+<div class="modal fade" id="modalLembreteFechamento" tabindex="-1" aria-labelledby="modalLembreteFechamentoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalLembreteFechamentoLabel">Lembrete de Fechamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-clock"></i> O caixa está aberto há mais de 4 horas. Deseja fechá-lo agora?
+                </div>
+                <p class="text-muted">Caso não queira fechar agora, você será lembrado novamente em 1 hora.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Não, Continuar</button>
+                <button type="button" class="btn btn-primary" id="btnFecharCaixaLembrete">Sim, Fechar Caixa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pdv.js') }}"></script>
+<script>
+// Variáveis globais
+let caixaAberto = false;
+let caixaId = null;
+let horaAbertura = null;
+let proximoLembrete = null;
+let intervaloLembrete = 4 * 60 * 60 * 1000; // 4 horas em milissegundos
+let intervaloVerificarCaixa = null;
+
+// Função para verificar se o caixa está aberto
+function verificarCaixaAberto() {
+    fetch('/caixa/verificar-aberto', {
+        method: 'GET',
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        caixaAberto = data.aberto;
+        
+        if (data.aberto) {
+            caixaId = data.caixa_id;
+            horaAbertura = new Date(data.hora_abertura);
+            
+            // Calcular próximo lembrete
+            const agora = new Date();
+            const millisDesdeAbertura = agora - horaAbertura;
+            const proxLembrete = horaAbertura.getTime() + Math.ceil(millisDesdeAbertura / intervaloLembrete) * intervaloLembrete;
+            proximoLembrete = new Date(proxLembrete);
+            
+            // Habilita o PDV
+            habilitarPDV();
+            
+            // Define timer para lembrar de fechar caixa
+            configurarLembreteFechamento();
+        } else {
+            // Mostra o modal de abertura de caixa
+            const modalAberturaCaixa = new bootstrap.Modal(document.getElementById('modalAberturaCaixa'));
+            modalAberturaCaixa.show();
+            
+            // Desabilita o PDV
+            desabilitarPDV();
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao verificar caixa:', error);
+        toastr.error('Não foi possível verificar o status do caixa.');
+    });
+}
+
+// Configurar lembrete para fechar o caixa
+function configurarLembreteFechamento() {
+    if (proximoLembrete) {
+        const agora = new Date();
+        const tempoAteProximoLembrete = proximoLembrete - agora;
+        
+        if (tempoAteProximoLembrete > 0) {
+            setTimeout(() => {
+                const modalLembrete = new bootstrap.Modal(document.getElementById('modalLembreteFechamento'));
+                modalLembrete.show();
+                
+                // Recalcular próximo lembrete (1 hora depois)
+                proximoLembrete = new Date(Date.now() + 60 * 60 * 1000);
+                configurarLembreteFechamento();
+            }, tempoAteProximoLembrete);
+        }
+    }
+}
+
+// Função para abrir o caixa
+function abrirCaixa(valorInicial) {
+    fetch('/caixa/abrir', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            valor_inicial: valorInicial
+        }),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            caixaAberto = true;
+            caixaId = data.caixa_id;
+            horaAbertura = new Date();
+            proximoLembrete = new Date(horaAbertura.getTime() + intervaloLembrete);
+            
+            // Fechar modal
+            const modalAbertura = bootstrap.Modal.getInstance(document.getElementById('modalAberturaCaixa'));
+            modalAbertura.hide();
+            
+            // Habilitar PDV
+            habilitarPDV();
+            
+            // Configurar lembrete
+            configurarLembreteFechamento();
+            
+            toastr.success('Caixa aberto com sucesso!');
+        } else {
+            toastr.error(data.error || 'Erro ao abrir caixa');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao abrir caixa:', error);
+        toastr.error('Não foi possível abrir o caixa.');
+    });
+}
+
+// Função para fechar o caixa
+function fecharCaixa(valorFinal) {
+    if (!caixaId) {
+        toastr.error('ID do caixa não encontrado');
+        return;
+    }
+    
+    fetch(`/caixa/fechar/${caixaId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            valor_final: valorFinal
+        }),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            caixaAberto = false;
+            caixaId = null;
+            
+            // Fechar modal de fechamento
+            const modalFechamento = bootstrap.Modal.getInstance(document.getElementById('modalFechamentoCaixa'));
+            if (modalFechamento) {
+                modalFechamento.hide();
+            }
+            
+            // Desabilitar PDV
+            desabilitarPDV();
+            
+            // Perguntar se quer ver o relatório
+            if (confirm('Caixa fechado com sucesso! Deseja visualizar o relatório?')) {
+                window.open(`/caixa/relatorio/${data.caixa_id}`, '_blank');
+            } else {
+                toastr.success('Caixa fechado com sucesso!');
+            }
+        } else {
+            toastr.error(data.error || 'Erro ao fechar caixa');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao fechar caixa:', error);
+        toastr.error('Não foi possível fechar o caixa.');
+    });
+}
+
+// Função para realizar retirada
+function realizarRetirada(dados) {
+    if (!caixaId) {
+        toastr.error('ID do caixa não encontrado');
+        return;
+    }
+    
+    fetch(`/caixa/retirada/${caixaId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dados),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Fechar modal de retirada
+            const modalRetirada = bootstrap.Modal.getInstance(document.getElementById('modalRetiradaCaixa'));
+            modalRetirada.hide();
+            
+            // Limpar formulário
+            document.getElementById('formRetiradaCaixa').reset();
+            
+            toastr.success('Retirada registrada com sucesso!');
+        } else {
+            toastr.error(data.error || 'Erro ao registrar retirada');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao registrar retirada:', error);
+        toastr.error('Não foi possível registrar a retirada.');
+    });
+}
+
+// Função para carregar autorizadores
+function carregarAutorizadores() {
+    fetch('/caixa/autorizadores', {
+        method: 'GET',
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const selectAutorizador = document.getElementById('autorizadorRetirada');
+            selectAutorizador.innerHTML = '<option value="">Selecione o autorizador</option>';
+            
+            data.autorizadores.forEach(autorizador => {
+                const option = document.createElement('option');
+                option.value = autorizador.id;
+                option.textContent = autorizador.name;
+                selectAutorizador.appendChild(option);
+            });
+        } else {
+            toastr.error(data.error || 'Erro ao carregar autorizadores');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao carregar autorizadores:', error);
+        toastr.error('Não foi possível carregar os autorizadores.');
+    });
+}
+
+// Habilitar o PDV
+function habilitarPDV() {
+    // Remover classe disabled dos elementos PDV
+    document.querySelectorAll('.pdv-container button, .pdv-container input').forEach(elem => {
+        elem.disabled = false;
+    });
+    
+    // Adicionar botão de fechar caixa na barra de ferramentas
+    const btnFecharCaixaHTML = '<button type="button" class="btn btn-warning ms-2" id="btnFecharCaixaNav"><i class="bi bi-box-arrow-left"></i> Fechar Caixa</button>';
+    const btnRetiradaHTML = '<button type="button" class="btn btn-danger ms-2" id="btnRetiradaNav"><i class="bi bi-cash"></i> Retirada</button>';
+    
+    const navbarRight = document.querySelector('.navbar-nav.ms-auto');
+    if (navbarRight && !document.getElementById('btnFecharCaixaNav')) {
+        navbarRight.insertAdjacentHTML('afterbegin', btnFecharCaixaHTML);
+        navbarRight.insertAdjacentHTML('afterbegin', btnRetiradaHTML);
+        
+        // Adicionar eventos aos novos botões
+        document.getElementById('btnFecharCaixaNav').addEventListener('click', () => {
+            const modalFechamento = new bootstrap.Modal(document.getElementById('modalFechamentoCaixa'));
+            modalFechamento.show();
+        });
+        
+        document.getElementById('btnRetiradaNav').addEventListener('click', () => {
+            carregarAutorizadores();
+            const modalRetirada = new bootstrap.Modal(document.getElementById('modalRetiradaCaixa'));
+            modalRetirada.show();
+        });
+    }
+    
+    // Atualizar texto do botão de abrir/fechar caixa
+    const btnAbrirFecharCaixa = document.getElementById('btnAbrirFecharCaixa');
+    btnAbrirFecharCaixa.textContent = 'Fechar Caixa';
+    btnAbrirFecharCaixa.classList.remove('btn-warning');
+    btnAbrirFecharCaixa.classList.add('btn-danger');
+    btnAbrirFecharCaixa.setAttribute('data-status', 'open');
+}
+
+// Desabilitar o PDV
+function desabilitarPDV() {
+    // Adicionar classe disabled aos elementos PDV
+    document.querySelectorAll('.pdv-container button, .pdv-container input').forEach(elem => {
+        elem.disabled = true;
+    });
+    
+    // Remover botões de caixa da barra de ferramentas
+    const btnFecharCaixaNav = document.getElementById('btnFecharCaixaNav');
+    if (btnFecharCaixaNav) {
+        btnFecharCaixaNav.remove();
+    }
+    
+    const btnRetiradaNav = document.getElementById('btnRetiradaNav');
+    if (btnRetiradaNav) {
+        btnRetiradaNav.remove();
+    }
+    
+    // Atualizar texto do botão de abrir/fechar caixa
+    const btnAbrirFecharCaixa = document.getElementById('btnAbrirFecharCaixa');
+    btnAbrirFecharCaixa.textContent = 'Abrir Caixa';
+    btnAbrirFecharCaixa.classList.remove('btn-danger');
+    btnAbrirFecharCaixa.classList.add('btn-warning');
+    btnAbrirFecharCaixa.setAttribute('data-status', 'closed');
+}
+
+// Event Listeners quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar status do caixa ao carregar a página
+    verificarCaixaAberto();
+    
+    // Verificar caixa a cada 5 minutos para manter sincronizado
+    intervaloVerificarCaixa = setInterval(verificarCaixaAberto, 5 * 60 * 1000);
+    
+    // Evento para abrir caixa
+    document.getElementById('btnAbrirCaixa').addEventListener('click', function() {
+        const valorInicial = parseFloat(document.getElementById('valorInicial').value);
+        if (isNaN(valorInicial) || valorInicial < 0) {
+            toastr.error('Informe um valor inicial válido');
+            return;
+        }
+        
+        abrirCaixa(valorInicial);
+    });
+    
+    // Evento para fechar caixa
+    document.getElementById('btnFecharCaixa').addEventListener('click', function() {
+        const valorFinal = parseFloat(document.getElementById('valorFinal').value);
+        if (isNaN(valorFinal) || valorFinal < 0) {
+            toastr.error('Informe um valor final válido');
+            return;
+        }
+        
+        fecharCaixa(valorFinal);
+    });
+    
+    // Evento para fechar caixa pelo lembrete
+    document.getElementById('btnFecharCaixaLembrete').addEventListener('click', function() {
+        const modalLembrete = bootstrap.Modal.getInstance(document.getElementById('modalLembreteFechamento'));
+        modalLembrete.hide();
+        
+        const modalFechamento = new bootstrap.Modal(document.getElementById('modalFechamentoCaixa'));
+        modalFechamento.show();
+    });
+    
+    // Evento para retirada de caixa pelo botão nas ações rápidas
+    document.getElementById('retiradaCaixa').addEventListener('click', function() {
+        if (!caixaAberto) {
+            toastr.error('Você precisa abrir o caixa antes de fazer uma retirada');
+            return;
+        }
+        
+        carregarAutorizadores();
+        const modalRetirada = new bootstrap.Modal(document.getElementById('modalRetiradaCaixa'));
+        modalRetirada.show();
+    });
+    
+    // Adicionar atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        // Evitar atalhos quando estiver em campos de entrada
+        if (document.activeElement.tagName === 'INPUT' || 
+            document.activeElement.tagName === 'SELECT' || 
+            document.activeElement.tagName === 'TEXTAREA') {
+            return;
+        }
+        
+        if (e.key === 'F2') {
+            e.preventDefault();
+            document.getElementById('consultarPreco').click();
+        } else if (e.key === 'F3') {
+            e.preventDefault();
+            document.getElementById('consultarCliente').click();
+        } else if (e.key === 'F4') {
+            e.preventDefault();
+            document.getElementById('finalizarVenda').click();
+        } else if (e.key === 'F5') {
+            e.preventDefault();
+            document.getElementById('retiradaCaixa').click();
+        } else if (e.key === 'F8') {
+            e.preventDefault();
+            document.getElementById('consultarDividas').click();
+        }
+    });
+    
+    // Evento para retirada de caixa
+    document.getElementById('btnRetirarCaixa').addEventListener('click', function() {
+        const valorRetirada = parseFloat(document.getElementById('valorRetirada').value);
+        const motivoRetirada = document.getElementById('motivoRetirada').value;
+        const autorizadorId = document.getElementById('autorizadorRetirada').value;
+        const senhaAutorizador = document.getElementById('senhaAutorizador').value;
+        
+        if (isNaN(valorRetirada) || valorRetirada <= 0) {
+            toastr.error('Informe um valor válido para retirada');
+            return;
+        }
+        
+        if (!motivoRetirada) {
+            toastr.error('Informe o motivo da retirada');
+            return;
+        }
+        
+        if (!autorizadorId) {
+            toastr.error('Selecione um autorizador');
+            return;
+        }
+        
+        if (!senhaAutorizador) {
+            toastr.error('Informe a senha do autorizador');
+            return;
+        }
+        
+        const dados = {
+            valor: valorRetirada,
+            motivo: motivoRetirada,
+            autorizador_id: autorizadorId,
+            senha: senhaAutorizador
+        };
+        
+        realizarRetirada(dados);
+    });
+    
+    // Adicionar campos de caixa ao formulário de venda
+    const formVenda = document.getElementById('formVenda');
+    if (formVenda) {
+        formVenda.addEventListener('submit', function(e) {
+            if (!caixaAberto) {
+                e.preventDefault();
+                toastr.error('Não é possível realizar vendas com o caixa fechado.');
+                return;
+            }
+            
+            // Adicionar ID do caixa ao formulário
+            const inputCaixaId = document.createElement('input');
+            inputCaixaId.type = 'hidden';
+            inputCaixaId.name = 'caixa_id';
+            inputCaixaId.value = caixaId;
+            formVenda.appendChild(inputCaixaId);
+        });
+    }
+});
+
+// Evento para quando o usuário fechar a página ou sair
+window.addEventListener('beforeunload', async function(e) {
+    // Limpar o intervalo de verificação
+    if (intervaloVerificarCaixa) {
+        clearInterval(intervaloVerificarCaixa);
+    }
+    
+    // Se o caixa estiver aberto, mostrar diálogo personalizado
+    if (caixaAberto) {
+        // Para navegadores modernos
+        e.preventDefault();
+        
+        // Mensagem (não aparecerá em navegadores modernos, mas é necessária)
+        const mensagem = 'Tem certeza que deseja sair? As alterações podem não ser salvas.';
+        e.returnValue = mensagem;
+        return mensagem;
+    }
+});
+
+// Inicialização quando o documento estiver pronto
+document.addEventListener('DOMContentLoaded', async function() {
+    // Carregar o script de diálogo personalizado de forma dinâmica
+    const script = document.createElement('script');
+    script.src = "{{ url_for('static', filename='js/dialogo-confirmacao.js') }}";
+    document.body.appendChild(script);
+});
+
+// Função para atualizar o relógio em tempo real
+function atualizarHora() {
+    const agora = new Date();
+    const dia = String(agora.getDate()).padStart(2, '0');
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const ano = agora.getFullYear();
+    const horas = String(agora.getHours()).padStart(2, '0');
+    const minutos = String(agora.getMinutes()).padStart(2, '0');
+    const segundos = String(agora.getSeconds()).padStart(2, '0');
+    
+    const horaFormatada = `${dia}/${mes}/${ano} ${horas}:${minutos}:${segundos}`;
+    document.getElementById('current-time').textContent = horaFormatada;
+}
+
+// Atualizar a hora a cada segundo
+setInterval(atualizarHora, 1000);
+// Executar imediatamente para evitar atraso na primeira atualização
+atualizarHora();
+</script>
+{% endblock %}

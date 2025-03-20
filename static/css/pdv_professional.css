@@ -1,0 +1,795 @@
+:root {
+  --primary-color: #2980b9;
+  --primary-dark: #1f618d;
+  --success-color: #27ae60;
+  --danger-color: #e74c3c;
+  --warning-color: #f39c12;
+  --dark-color: #212121;
+  --light-color: #ecf0f1;
+  --gray-color: #95a5a6;
+  --white-color: #ffffff;
+  --font-primary: 'Nunito', 'Segoe UI', -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-primary);
+  background-color: #FFF380; /* Fundo dourado claro */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  height: 100vh;
+}
+
+/* Fundo dourado */
+.pdv-background {
+  background-color: #FFD700; /* Dourado (Gold) */
+  min-height: calc(100vh - 130px);
+  padding: 15px 0;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+}
+
+/* Remover margens e padding do container principal do Bootstrap */
+.container-fluid {
+  padding: 0 !important;
+}
+
+.row {
+  margin: 0 !important;
+}
+
+/* Cabeçalho superior */
+.pdv-header {
+  background-color: #e74c3c; /* Alterado de var(--dark-color) para vermelho */
+  color: var(--white-color);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.pdv-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.pdv-header .header-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pdv-header .header-info .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pdv-header .header-info .status i {
+  font-size: 12px;
+  color: var(--success-color);
+}
+
+.pdv-header .header-info .operator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pdv-header .header-info .time {
+  font-weight: 600;
+}
+
+.pdv-header .cash-actions {
+  margin-left: 10px;
+}
+
+.pdv-header .cash-actions .btn {
+  font-weight: 600;
+  padding: 4px 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+}
+
+.pdv-header .cash-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+/* Status do Caixa */
+.caixa-status {
+  background-color: var(--dark-color);
+  color: var(--white-color);
+  text-align: center;
+  padding: 15px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid #FFD700;
+}
+
+.caixa-livre {
+  background-color: #28a745;
+}
+
+.caixa-ocupado {
+  background-color: var(--warning-color);
+}
+
+/* Container principal */
+.pdv-container {
+  width: 100%;
+  min-height: calc(100vh - 130px);
+  padding: 20px !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  background-color: #FFF8DC; /* Dourado mais claro (cornsilk) para contraste */
+}
+
+/* Marca d'água no cupom fiscal */
+.cupom-area {
+  position: relative;
+  overflow: hidden;
+}
+
+.cupom-area::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  background-image: url('../logo_merc.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.08;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.table {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cards */
+.pdv-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid #FFD700; /* Borda dourada */
+  transition: all 0.3s ease;
+}
+
+.pdv-card:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.pdv-card-header {
+  padding: 15px;
+  background-color: var(--primary-color);
+  color: white;
+  border-bottom: 3px solid #FFD700; /* Borda dourada */
+}
+
+.pdv-card-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.pdv-card-header h2 i {
+  margin-right: 8px;
+}
+
+.pdv-card-body {
+  padding: 20px;
+}
+
+/* Entrada de produto */
+.product-input-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.product-input-container .input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.product-input-container .input-wrapper i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary-color);
+  font-size: 1.2rem;
+}
+
+.product-input {
+  width: 100%;
+  padding: 15px 15px 15px 45px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.product-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Total da venda */
+.total-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 10px 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #FFD700; /* Borda dourada */
+}
+
+.total-label {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #718096;
+  margin-right: 10px;
+}
+
+.total-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--success-color);
+}
+
+/* Tabela de itens */
+.table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.pdv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.pdv-table thead {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.pdv-table th {
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--dark-color);
+}
+
+.pdv-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pdv-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pdv-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.pdv-table .qty-col {
+  width: 80px;
+}
+
+.pdv-table .actions-col {
+  width: 100px;
+  text-align: center;
+}
+
+/* Botões de ações rápidas */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.quick-action-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 10px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  background-color: var(--white-color);
+  color: var(--dark-color);
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  transition: all 0.25s ease;
+  min-height: 80px;
+  width: calc(33.333% - 8px);
+  margin-bottom: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+  border-color: #FFD700;
+}
+
+.quick-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.quick-action-btn .icon-container {
+  font-size: 1.5rem;
+  margin-bottom: 6px;
+  color: var(--primary-color);
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-action-btn span {
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.quick-action-btn .shortcut {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background-color: rgba(0, 0, 0, 0.07);
+  border-radius: 3px;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  opacity: 0.9;
+  color: inherit;
+}
+
+.quick-action-btn.primary .shortcut,
+.quick-action-btn.danger .shortcut {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.quick-action-btn.primary {
+  background-color: #2980b9;
+  color: white;
+  border-color: #2173a6;
+  box-shadow: 0 3px 6px rgba(41, 128, 185, 0.3);
+}
+
+.quick-action-btn.primary .icon-container {
+  color: white;
+}
+
+.quick-action-btn.primary:hover {
+  background-color: #2173a6;
+  box-shadow: 0 4px 8px rgba(41, 128, 185, 0.4);
+}
+
+.quick-action-btn.danger {
+  background-color: #e74c3c;
+  color: white;
+  border-color: #c0392b;
+  box-shadow: 0 3px 6px rgba(231, 76, 60, 0.3);
+}
+
+.quick-action-btn.danger .icon-container {
+  color: white;
+}
+
+.quick-action-btn.danger:hover {
+  background-color: #c0392b;
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+}
+
+/* Cores personalizadas para cada botão */
+#consultarPreco .icon-container i {
+  color: #2980b9; /* Azul */
+}
+
+#consultarCliente .icon-container i {
+  color: #27ae60; /* Verde */
+}
+
+#consultarDividas .icon-container i {
+  color: #f39c12; /* Laranja */
+}
+
+#retiradaCaixa .icon-container i {
+  color: #8e44ad; /* Roxo */
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1200px) {
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-action-btn {
+    height: 100px;
+  }
+}
+
+/* Botões de ações rápidas */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0;
+  border: none;
+  background: none;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  height: 70px;
+}
+
+.action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  font-size: 22px;
+  color: white;
+}
+
+.btn-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-right: 15px;
+}
+
+.btn-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--dark-color);
+}
+
+.btn-shortcut {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-top: 3px;
+  display: inline-block;
+  background-color: rgba(0,0,0,0.05);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.price-btn {
+  background-color: white;
+  border-left: 5px solid var(--primary-color);
+}
+
+.price-btn .btn-icon {
+  background-color: var(--primary-color);
+}
+
+.debt-btn {
+  background-color: white;
+  border-left: 5px solid var(--warning-color);
+}
+
+.debt-btn .btn-icon {
+  background-color: var(--warning-color);
+}
+
+.finish-btn {
+  background-color: white;
+  border-left: 5px solid var(--success-color);
+}
+
+.finish-btn .btn-icon {
+  background-color: var(--success-color);
+}
+
+/* Seção de cliente */
+.customer-section {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title i {
+  color: var(--primary-color);
+}
+
+.client-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.client-input-field {
+  flex: 1;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.client-input-field:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.client-search-btn {
+  height: 45px;
+  width: 45px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.client-search-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Modal styles */
+.modal-content {
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.modal-header.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.modal-header.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+.modal-header.bg-danger {
+  background-color: var(--danger-color) !important;
+}
+
+.modal-header.bg-warning {
+  background-color: var(--warning-color) !important;
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding: 15px 20px;
+}
+
+/* Botões */
+.pdv-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pdv-button-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.pdv-button-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.pdv-button-success {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.pdv-button-success:hover {
+  background-color: #219653;
+}
+
+.pdv-button-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.pdv-button-danger:hover {
+  background-color: #c0392b;
+}
+
+/* Mensagens */
+#mensagens {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 350px;
+}
+
+#mensagens div {
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Produto atual */
+.produto-atual {
+  background-color: #f8f9fa;
+  border-left: 5px solid var(--primary-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.produto-atual:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.produto-atual .pdv-card-header {
+  background-color: var(--danger-color);
+}
+
+.produto-atual .pdv-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px !important;
+}
+
+.produto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nome-produto {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--dark-color);
+}
+
+.codigo-produto {
+  font-size: 0.9rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.preco-produto {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  background-color: rgba(52, 152, 219, 0.1);
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+/* Produto Atual - destacando com dourado */
+.produto-atual .nome-produto {
+  color: #333;
+  font-weight: 700;
+  font-size: 1.2rem;
+  display: block;
+  text-shadow: 0 1px 0 rgba(255, 215, 0, 0.3); /* Sombra dourada sutil */
+}
+
+/* Cupom Fiscal */
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table {
+  margin-bottom: 0;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  color: #4a5568;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  padding: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.table tbody td {
+  padding: 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}

@@ -1,0 +1,75 @@
+# Arquivos Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Arquivos de banco de dados SQLite
+*.db
+*.sqlite3
+instance/
+
+# Arquivos de ambiente virtual
+venv/
+ENV/
+
+# Logs
+*.log
+printer.log
+
+# Diretórios e arquivos específicos do PDV
+receipts/
+uploads/
+*.pdf
+*.txt
+!requirements.txt
+!README.md
+
+# Arquivos temporários
+.DS_Store
+Thumbs.db
+.temp/
+.tmp/
+
+# Arquivos de configuração de IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Arquivos específicos do Windows
+desktop.ini
+*.bat
+cmd.exe
+
+# Ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos do SumatraPDF
+SumatraPDF/
+SumatraPDF-installer.exe
+SumatraPDF.exe
+SumatraPDF.zip
+
+# Outros
+browser/

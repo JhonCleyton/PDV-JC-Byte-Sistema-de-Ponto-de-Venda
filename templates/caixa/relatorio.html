@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Caixa{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Relatório de Caixa</h2>
+        <div>
+            <button id="btnImprimir" class="btn btn-secondary">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <a href="{{ url_for('caixa.listar_caixas') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Informações do Caixa</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Operador:</strong> {{ relatorio.usuario }}</p>
+                            <p><strong>Data Abertura:</strong> {{ relatorio.data_abertura }}</p>
+                            <p><strong>Data Fechamento:</strong> {{ relatorio.data_fechamento }}</p>
+                            <p><strong>Status:</strong> {{ relatorio.status }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Valor Inicial:</strong> R$ {{ "%.2f"|format(relatorio.valor_inicial) }}</p>
+                            {% if relatorio.status == 'Fechado' %}
+                                <p><strong>Valor Final:</strong> R$ {{ "%.2f"|format(relatorio.valor_final) }}</p>
+                                <p><strong>Valor Esperado:</strong> R$ {{ "%.2f"|format(relatorio.valor_esperado) }}</p>
+                                <p>
+                                    <strong>Diferença:</strong> 
+                                    {% if relatorio.diferenca > 0 %}
+                                        <span class="text-success">R$ {{ "%.2f"|format(relatorio.diferenca) }}</span>
+                                    {% elif relatorio.diferenca < 0 %}
+                                        <span class="text-danger">R$ {{ "%.2f"|format(relatorio.diferenca) }}</span>
+                                    {% else %}
+                                        R$ {{ "%.2f"|format(relatorio.diferenca) }}
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Resumo de Vendas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Total de Vendas:</strong> {{ relatorio.total_vendas }}</p>
+                            <p><strong>Valor Total:</strong> R$ {{ "%.2f"|format(relatorio.valor_total_vendas) }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="graficoVendas" style="height: 200px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Meios de Pagamento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Dinheiro:</strong> R$ {{ "%.2f"|format(relatorio.vendas_dinheiro) }}</p>
+                            <p><strong>PIX:</strong> R$ {{ "%.2f"|format(relatorio.vendas_pix) }}</p>
+                            <p><strong>Crédito:</strong> R$ {{ "%.2f"|format(relatorio.vendas_credito) }}</p>
+                            <p><strong>Débito:</strong> R$ {{ "%.2f"|format(relatorio.vendas_debito) }}</p>
+                            <p><strong>Crediário:</strong> R$ {{ "%.2f"|format(relatorio.vendas_crediario) }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="graficoPagamentos" style="height: 200px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Pagamentos de Dívidas</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total de Pagamentos:</strong> R$ {{ "%.2f"|format(relatorio.pagamentos_divida) }}</p>
+                    <p><strong>Em Dinheiro:</strong> R$ {{ "%.2f"|format(relatorio.pagamentos_divida_dinheiro) }}</p>
+                    <p><strong>Outros Meios:</strong> R$ {{ "%.2f"|format(relatorio.pagamentos_divida_outros) }}</p>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Retiradas</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total de Retiradas:</strong> R$ {{ "%.2f"|format(relatorio.total_retiradas) }}</p>
+                    {% if relatorio.retiradas %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Valor</th>
+                                        <th>Motivo</th>
+                                        <th>Autorizador</th>
+                                        <th>Data/Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for retirada in relatorio.retiradas %}
+                                    <tr>
+                                        <td>R$ {{ "%.2f"|format(retirada.amount) }}</td>
+                                        <td>{{ retirada.reason }}</td>
+                                        <td>{{ retirada.authorizer_name }}</td>
+                                        <td>{{ retirada.date.split('T')[0] }} {{ retirada.date.split('T')[1].split('.')[0] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Nenhuma retirada registrada</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Botão imprimir relatório
+    document.getElementById('btnImprimir').addEventListener('click', function() {
+        fetch(`/caixa/imprimir/{{ caixa.id }}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastr.success(data.message);
+                } else {
+                    toastr.error(data.error);
+                }
+            })
+            .catch(err => {
+                toastr.error('Erro ao enviar para impressão');
+            });
+    });
+    
+    // Gráfico de vendas
+    const dadosVendas = {
+        total: {{ relatorio.valor_total_vendas }},
+        dinheiro: {{ relatorio.vendas_dinheiro }},
+        pix: {{ relatorio.vendas_pix }},
+        credito: {{ relatorio.vendas_credito }},
+        debito: {{ relatorio.vendas_debito }},
+        crediario: {{ relatorio.vendas_crediario }}
+    };
+    
+    const optionsPagamentos = {
+        series: [
+            dadosVendas.dinheiro,
+            dadosVendas.pix,
+            dadosVendas.credito,
+            dadosVendas.debito,
+            dadosVendas.crediario
+        ],
+        chart: {
+            type: 'donut',
+            height: 200
+        },
+        labels: ['Dinheiro', 'PIX', 'Crédito', 'Débito', 'Crediário'],
+        responsive: [{
+            breakpoint: 480,
+            options: {
+                chart: {
+                    width: 200
+                },
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }],
+        colors: ['#28a745', '#17a2b8', '#fd7e14', '#6f42c1', '#dc3545']
+    };
+
+    // Renderizar gráficos se tiver dados
+    if (dadosVendas.total > 0) {
+        const chartPagamentos = new ApexCharts(document.querySelector("#graficoPagamentos"), optionsPagamentos);
+        chartPagamentos.render();
+        
+        // Gráfico de barras para as vendas
+        const optionsVendas = {
+            series: [{
+                name: 'Valor',
+                data: [dadosVendas.total]
+            }],
+            chart: {
+                type: 'bar',
+                height: 200
+            },
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    horizontal: true
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val) {
+                    return 'R$ ' + val.toFixed(2);
+                }
+            },
+            xaxis: {
+                categories: ['Total de Vendas']
+            },
+            colors: ['#20c997']
+        };
+
+        const chartVendas = new ApexCharts(document.querySelector("#graficoVendas"), optionsVendas);
+        chartVendas.render();
+    }
+});
+</script>
+{% endblock %}
