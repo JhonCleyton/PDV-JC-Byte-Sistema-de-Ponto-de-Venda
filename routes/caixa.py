@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user, logout_user
 from models import db, CashRegister, CashWithdrawal, User, Sale, Payment
 from datetime import datetime, timedelta
+from pytz import timezone
 from decimal import Decimal
 from sqlalchemy import func, and_, or_
 from utils.permissions import non_cashier_required
@@ -60,7 +61,7 @@ def abrir_caixa():
         novo_caixa = CashRegister(
             user_id=current_user.id,
             opening_amount=valor_inicial,
-            opening_date=datetime.now(),
+            opening_date=datetime.now(timezone('America/Sao_Paulo')),
             status='open'
         )
         
@@ -604,6 +605,7 @@ def gerar_relatorio_caixa(caixa_id):
         'vendas_credito': 0,
         'vendas_debito': 0,
         'vendas_crediario': 0,
+        'vendas_ticket_alimentacao': 0,
         
         # Pagamentos de dívidas
         'pagamentos_divida': 0,
@@ -641,6 +643,7 @@ def gerar_relatorio_caixa(caixa_id):
     relatorio['vendas_credito'] = sum([float(venda.total) for venda in vendas_normais if venda.payment_method == 'cartao_credito'])
     relatorio['vendas_debito'] = sum([float(venda.total) for venda in vendas_normais if venda.payment_method == 'cartao_debito'])
     relatorio['vendas_crediario'] = sum([float(venda.total) for venda in vendas_normais if venda.payment_method == 'crediario'])
+    relatorio['vendas_ticket_alimentacao'] = sum([float(venda.total) for venda in vendas_normais if venda.payment_method == 'ticket_alimentacao'])
     
     # Cálculos para pagamentos de dívida
     relatorio['pagamentos_divida'] = sum([float(pagamento.total) for pagamento in pagamentos_divida])

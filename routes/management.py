@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, send_file
+from sqlalchemy import or_
 from datetime import datetime, timedelta, date
 from sqlalchemy import func, text, extract, and_, cast, Date
-from models import db, Sale, Product, Category, Receivable, Payable, SaleItem
+from models import db, Sale, Product, Category, Receivable, Payable, SaleItem, User
 from flask_login import login_required
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -12,6 +13,91 @@ import traceback
 from dateutil.relativedelta import relativedelta
 
 management = Blueprint('management', __name__)
+
+@management.route('/analytics/discounts', endpoint='discounts_analytics_page')
+@login_required
+def discounts_analytics_page():
+    return render_template('management/discounts_analytics.html')
+
+@management.route('/analytics/api/discounts_analytics', endpoint='discounts_analytics_api')
+@login_required
+def discounts_analytics_api():
+    # Filtros do frontend
+    produto = request.args.get('produto', type=str, default=None)
+    start_date = request.args.get('start_date', type=str, default=None)
+    end_date = request.args.get('end_date', type=str, default=None)
+
+    query = db.session.query(
+        Sale.id.label('venda_id'),
+        Sale.date,
+        Product.name.label('produto'),
+        SaleItem.discount.label('desconto_reais'),
+        SaleItem.price,
+        SaleItem.quantity,
+        SaleItem.subtotal,
+        User.name.label('operador'),
+        Product.selling_price.label('preco_original')
+    ).join(SaleItem, Sale.id == SaleItem.sale_id)
+    query = query.join(Product, SaleItem.product_id == Product.id)
+    query = query.join(User, Sale.user_id == User.id)
+
+    # Itens vendidos por preço menor que o original
+    query = query.filter(
+        SaleItem.price < Product.selling_price
+    )
+
+    # Filtro por produto
+    if produto:
+        query = query.filter(Product.name.ilike(f"%{produto}%"))
+
+    # Filtro por data
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(Sale.date >= start_dt)
+        except Exception:
+            pass
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+            query = query.filter(Sale.date <= end_dt)
+        except Exception:
+            pass
+
+    descontos = query.order_by(Sale.date.desc()).all()
+    data = []
+    from promotions_models.promotions import Promotion
+    from sqlalchemy.orm import joinedload
+
+    for d in descontos:
+        preco_original = float(d.preco_original or 0)
+        valor_original = preco_original * float(d.quantity or 1)
+        valor_final = float(d.subtotal or 0)
+        diferenca = valor_original - valor_final
+        if diferenca > 0.01:  # Considera apenas descontos reais (maior que 1 centavo)
+            promo_nome = None
+            # Buscar promoção ativa para o produto na data da venda
+            promo = Promotion.query.\
+                filter(Promotion.active == True).\
+                filter(Promotion.start_date <= d.date, Promotion.end_date >= d.date).\
+                filter(Promotion.products.any(name=d.produto)).\
+                order_by(Promotion.discount_value.desc()).first()
+            if promo:
+                promo_nome = promo.name
+                desconto_percentual = (diferenca / valor_original * 100) if valor_original else 0
+                data.append({
+                    'data': d.date.strftime('%d/%m/%Y'),
+                    'venda_id': d.venda_id,
+                    'produto': d.produto,
+                    'promo_nome': promo_nome,
+                    'valor_original': f"R$ {valor_original:.2f}",
+                    'valor_promo': f"R$ {valor_final:.2f}",
+                    'diferença': f"R$ {diferenca:.2f}",
+                    'desconto_percentual': f"{desconto_percentual:.1f}%",
+                    'operador': d.operador
+                })
+    return jsonify(success=True, data=data)
+
 
 @management.route('/painel')
 @login_required
@@ -216,6 +302,13 @@ def gestao():
             Receivable.remaining_amount > 0
         ).all()
         total_overdue = sum(float(r.remaining_amount) for r in overdue_receivables)
+
+        # Contas a pagar vencidas
+        overdue_payables = Payable.query.filter(
+            Payable.due_date < today,
+            Payable.remaining_amount > 0
+        ).all()
+        total_overdue_payables = sum(float(p.remaining_amount) for p in overdue_payables)
         
         # Tendência de crescimento (comparação com mês anterior)
         last_month_start = start_of_month - relativedelta(months=1)
@@ -250,6 +343,7 @@ def gestao():
             pending_payables=float(pending_payables),
             estimated_profit=estimated_profit,
             total_overdue=float(total_overdue),
+            total_overdue_payables=float(total_overdue_payables),
             growth=growth,
             avg_daily_sales=float(avg_daily_sales),
             total_sales=float(total_sales)

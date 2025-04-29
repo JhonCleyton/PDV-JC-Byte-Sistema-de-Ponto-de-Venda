@@ -62,6 +62,32 @@ def create_sale():
                 'error': 'Customer not found'
             }), 404
         
+        # Função utilitária para buscar promoção ativa
+        def get_active_promotion(product_id):
+            now = dt.utcnow()
+            promo = Promotion.query.\
+                filter(Promotion.active == True).\
+                filter(Promotion.start_date <= now, Promotion.end_date >= now).\
+                filter(Promotion.products.any(id=product_id)).\
+                order_by(Promotion.discount_value.desc()).first()
+            return promo
+
+        # Atualizar itens com preço promocional se houver
+        for item in data['items']:
+            product_id = item['product_id']
+            product = Product.query.get(product_id)
+            promo = get_active_promotion(product_id)
+            if promo:
+                if promo.discount_type == 'percent':
+                    promo_price = float(product.selling_price) * (1 - promo.discount_value / 100)
+                else:
+                    promo_price = max(0, float(product.selling_price) - promo.discount_value)
+                item['unit_price'] = round(promo_price, 2)
+                item['total'] = round(item['unit_price'] * float(item['quantity']) * (1 - float(item.get('discount',0))/100), 2)
+            else:
+                item['unit_price'] = float(product.selling_price)
+                item['total'] = round(item['unit_price'] * float(item['quantity']) * (1 - float(item.get('discount',0))/100), 2)
+
         # Calcular total da venda
         total = sum(float(item['total']) for item in data['items'])
         
@@ -122,6 +148,11 @@ def create_sale():
                 price=float(item_data['unit_price']),
                 discount=float(item_data.get('discount', 0))
             )
+            # Opcional: salvar referência à promoção aplicada (se quiser rastrear)
+            # promo = get_active_promotion(product.id)
+            # if promo:
+            #     sale_item.promotion_id = promo.id
+
             
             # Atualizar estoque
             product.stock -= float(item_data['quantity'])
@@ -199,6 +230,22 @@ def update_sale(id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+    """Atualiza o tipo de pagamento de uma venda"""
+    try:
+        data = request.get_json()
+        new_type = data.get('payment_method')
+        if not new_type:
+            return jsonify({'success': False, 'error': 'Tipo de pagamento não informado'}), 400
+        sale = Sale.query.get_or_404(sale_id)
+        sale.payment_method = new_type
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @vendas.route('/api/sales/<int:id>', methods=['DELETE'])
 @login_required

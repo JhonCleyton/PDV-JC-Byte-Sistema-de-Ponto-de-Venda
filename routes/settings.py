@@ -1,11 +1,17 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from models import db, CompanyInfo
-import win32print
-import win32con
-from datetime import datetime
+import platform
 import logging
 import traceback
+import sys
+
+# Import system-specific modules
+if platform.system() == 'Windows':
+    import win32print
+    import win32con
+else:
+    import cups
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -65,15 +71,26 @@ def update_company_info():
 def get_printers():
     """Retorna a lista de impressoras instaladas"""
     try:
-        printers = []
-        for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL):
-            printers.append(printer[2])
-            
-        return jsonify({
-            'success': True,
-            'printers': printers
-        })
+        if platform.system() == 'Windows':
+            printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL)]
+            default_printer = win32print.GetDefaultPrinter()
+            return jsonify({
+                'success': True,
+                'printers': printers,
+                'default_printer': default_printer
+            })
+        else:
+            conn = cups.Connection()
+            printers = conn.getPrinters()
+            default_printer = conn.getDefault()
+            printer_list = [name for name in printers]
+            return jsonify({
+                'success': True,
+                'printers': printer_list,
+                'default_printer': default_printer
+            })
     except Exception as e:
+        logging.error(f"Erro ao obter impressoras: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -148,97 +165,16 @@ def update_receipt_config():
 def test_print():
     """Imprime um cupom de teste"""
     try:
-        # Log inicial
-        logging.info("=== Iniciando rota de teste de impressão ===")
-        
-        # Obtém dados do request
-        data = request.get_json()
-        printer_name = data.get('printer_name')
-        logging.info(f"Impressora selecionada: {printer_name}")
-        
-        if not printer_name:
-            logging.error("Nome da impressora não informado")
-            return jsonify({
-                'success': False,
-                'error': 'Nome da impressora não informado'
-            }), 400
-            
-        # Tenta imprimir o cupom de teste
-        try:
-            from utils.printer import print_test
-            logging.info("Chamando função print_test")
-            result = print_test(printer_name)
-            logging.info(f"Resultado do print_test: {result}")
-            
-            if result:
-                return jsonify({
-                    'success': True,
-                    'message': 'Cupom de teste gerado com sucesso'
-                })
-            else:
-                logging.error("print_test retornou False")
-                return jsonify({
-                    'success': False,
-                    'error': 'Erro ao gerar cupom de teste. Verifique o arquivo printer.log para mais detalhes.'
-                }), 500
-                
-        except Exception as e:
-            logging.error(f"Erro ao chamar print_test: {str(e)}")
-            logging.error(traceback.format_exc())
-            return jsonify({
-                'success': False,
-                'error': f'Erro ao tentar imprimir: {str(e)}'
-            }), 500
-            
+        from utils.printer import print_test
+        printer_name = request.args.get('printer')
+        print_test(printer_name)
+        return jsonify({
+            'success': True,
+            'message': 'Cupom de teste enviado para impressão'
+        })
     except Exception as e:
-        logging.error(f"Erro geral na rota: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.error(f"Erro ao imprimir teste: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
-
-@settings_bp.route('/api/test_print', methods=['GET'])
-def test_print_route():
-    """Rota para testar a impressão"""
-    try:
-        # Configurar logging
-        logging.basicConfig(level=logging.INFO)
-        logging.info("=== INICIANDO TESTE DE IMPRESSÃO ===")
-        
-        from utils.printer import print_test, PRINTER_ENABLED
-        import win32print
-        import logging
-        
-        # Obtém a impressora padrão
-        printer_name = None
-        try:
-            printer_name = win32print.GetDefaultPrinter()
-            logging.info(f"Impressora padrão encontrada: {printer_name}")
-        except Exception as e:
-            logging.error(f"Erro ao obter impressora padrão: {str(e)}")
-            
-        if not printer_name:
-            logging.error("Nenhuma impressora padrão configurada no sistema")
-            return jsonify({"success": False, "error": "Nenhuma impressora padrão configurada no sistema"})
-            
-        if not PRINTER_ENABLED:
-            logging.error("Impressão desativada nas configurações")
-            return jsonify({"success": False, "error": "Impressão desativada nas configurações. Verifique as configurações do sistema."})
-            
-        # Tenta imprimir um cupom de teste
-        logging.info(f"Iniciando impressão de teste para a impressora: {printer_name}")
-        result = print_test(printer_name)
-        
-        if result:
-            logging.info("Impressão de teste concluída com sucesso")
-            return jsonify({"success": True, "message": f"Impressão de teste enviada para a impressora: {printer_name}"})
-        else:
-            logging.error("Falha no teste de impressão")
-            return jsonify({"success": False, "error": "Falha ao imprimir o cupom de teste. Verifique os logs para mais detalhes."})
-            
-    except Exception as e:
-        import traceback
-        logging.error(f"Erro no teste de impressão: {str(e)}")
-        logging.error(traceback.format_exc())
-        return jsonify({"success": False, "error": f"Erro no teste de impressão: {str(e)}"})

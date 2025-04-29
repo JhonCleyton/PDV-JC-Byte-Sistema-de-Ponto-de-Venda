@@ -69,7 +69,7 @@ def create_user():
             name=data['name'],
             username=data['username'],
             password=generate_password_hash(data['password']),
-            role=data.get('role', 'cashier'),
+            role=('caixa' if data.get('role', 'cashier').lower() in ['cashier', 'caixa'] else data.get('role').lower()),
             status=data.get('status', 'active')
         )
         
@@ -117,7 +117,7 @@ def update_user(id):
         if 'password' in data:
             user.password = generate_password_hash(data['password'])
         if 'role' in data and current_user.role == 'admin':
-            user.role = data['role']
+            user.role = 'caixa' if data['role'].lower() in ['cashier', 'caixa'] else data['role'].lower()
         
         db.session.commit()
         

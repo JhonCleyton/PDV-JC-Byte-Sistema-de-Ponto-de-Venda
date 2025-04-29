@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user
 from models import db, Sale, SaleItem, Product, Customer, User, Receivable, Payment, ReceivablePayment, CompanyInfo, CashRegister
 from datetime import datetime, timedelta
+from pytz import timezone
+from pytz import timezone
 from decimal import Decimal, InvalidOperation, ConversionSyntax
 from utils.permissions import non_cashier_required
 import re
@@ -52,11 +54,476 @@ def safe_decimal(value):
 @login_required
 @non_cashier_required
 def list_sales():
-    """Lista todas as vendas"""
+    """Renderiza a página de gerenciamento de vendas"""
+    return render_template('vendas/list.html')
+
+@vendas_bp.route('/analytics/dashboard')
+@login_required
+@non_cashier_required
+def dashboard():
+    return render_template('vendas/dashboard.html')
+
+@vendas_bp.route('/analytics/produtos')
+@login_required
+@non_cashier_required
+def analytics_produtos():
+    return render_template('vendas/analytics_produtos.html')
+
+@vendas_bp.route('/analytics/clientes')
+@login_required
+@non_cashier_required
+def analytics_clientes():
+    return render_template('vendas/analytics_clientes.html')
+
+@vendas_bp.route('/analytics/recebimentos')
+@login_required
+@non_cashier_required
+def analytics_recebimentos():
+    return render_template('vendas/analytics_recebimentos.html')
+
+@vendas_bp.route('/analytics/comparativo')
+@login_required
+@non_cashier_required
+def analytics_comparativo():
+    return render_template('vendas/analytics_comparativo.html')
+
+@vendas_bp.route('/api/analytics/comparativo', methods=['GET'])
+@login_required
+@non_cashier_required
+def api_analytics_comparativo():
     try:
-        sales = Sale.query.order_by(Sale.date.desc()).all()
-        return render_template('vendas/list.html', sales=sales)
+        start_date1 = request.args.get('start_date1')
+        end_date1 = request.args.get('end_date1')
+        start_date2 = request.args.get('start_date2')
+        end_date2 = request.args.get('end_date2')
+        def get_stats(start, end, label):
+            query = Sale.query
+            if start:
+                start_dt = datetime.strptime(start, '%Y-%m-%d')
+                query = query.filter(Sale.date >= start_dt)
+            if end:
+                end_dt = datetime.strptime(end, '%Y-%m-%d')
+                query = query.filter(Sale.date <= end_dt)
+            sales = query.all()
+            faturamento = sum(float(s.total) for s in sales)
+            vendas = len(sales)
+            ticket_medio = faturamento / vendas if vendas > 0 else 0
+            return {'label': label, 'faturamento': faturamento, 'vendas': vendas, 'ticket_medio': ticket_medio}
+        p1 = get_stats(start_date1, end_date1, 'Período 1')
+        p2 = get_stats(start_date2, end_date2, 'Período 2')
+        return jsonify({'success': True, 'periodos': [p1, p2]})
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/comparativo/export', methods=['GET'])
+@login_required
+@non_cashier_required
+def export_analytics_comparativo():
+    try:
+        import io
+        import pandas as pd
+        from flask import send_file
+        start_date1 = request.args.get('start_date1')
+        end_date1 = request.args.get('end_date1')
+        start_date2 = request.args.get('start_date2')
+        end_date2 = request.args.get('end_date2')
+        def get_stats(start, end, label):
+            query = Sale.query
+            if start:
+                start_dt = datetime.strptime(start, '%Y-%m-%d')
+                query = query.filter(Sale.date >= start_dt)
+            if end:
+                end_dt = datetime.strptime(end, '%Y-%m-%d')
+                query = query.filter(Sale.date <= end_dt)
+            sales = query.all()
+            faturamento = sum(float(s.total) for s in sales)
+            vendas = len(sales)
+            ticket_medio = faturamento / vendas if vendas > 0 else 0
+            return {'Período': label, 'Vendas': vendas, 'Faturamento': faturamento, 'Ticket Médio': ticket_medio}
+        p1 = get_stats(start_date1, end_date1, 'Período 1')
+        p2 = get_stats(start_date2, end_date2, 'Período 2')
+        df = pd.DataFrame([p1, p2])
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Comparativo')
+        output.seek(0)
+        return send_file(output, download_name='comparativo_vendas.xlsx', as_attachment=True)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/recebimentos', methods=['GET'])
+@login_required
+@non_cashier_required
+def api_analytics_recebimentos():
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        sales = query.all()
+        formas = ['dinheiro', 'cartao_credito', 'cartao_debito', 'pix', 'ticket_alimentacao']
+        formas_labels = ['Dinheiro', 'Cartão Crédito', 'Cartão Débito', 'PIX', 'Ticket Alimentação']
+        formas_dict = {f: {'qtd': 0, 'total': 0} for f in formas}
+        for s in sales:
+            if s.payment_method in formas_dict:
+                formas_dict[s.payment_method]['qtd'] += 1
+                formas_dict[s.payment_method]['total'] += float(s.total)
+        detalhes = [
+            {'forma': formas_labels[i], 'qtd': formas_dict[f]['qtd'], 'total': formas_dict[f]['total']}
+            for i, f in enumerate(formas)
+        ]
+        valores = [formas_dict[f]['total'] for f in formas]
+        return jsonify({
+            'success': True,
+            'recebimentos': {
+                'labels': formas_labels,
+                'valores': valores,
+                'detalhes': detalhes
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/recebimentos/export', methods=['GET'])
+@login_required
+@non_cashier_required
+def export_analytics_recebimentos():
+    try:
+        import io
+        import pandas as pd
+        from flask import send_file
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        sales = query.all()
+        formas = ['dinheiro', 'cartao_credito', 'cartao_debito', 'pix', 'ticket_alimentacao']
+        formas_labels = ['Dinheiro', 'Cartão Crédito', 'Cartão Débito', 'PIX', 'Ticket Alimentação']
+        formas_dict = {f: {'qtd': 0, 'total': 0} for f in formas}
+        for s in sales:
+            if s.payment_method in formas_dict:
+                formas_dict[s.payment_method]['qtd'] += 1
+                formas_dict[s.payment_method]['total'] += float(s.total)
+        data = [
+            {'Forma': formas_labels[i], 'Qtd. Vendas': formas_dict[f]['qtd'], 'Total': formas_dict[f]['total']} for i, f in enumerate(formas)
+        ]
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Recebimentos')
+        output.seek(0)
+        return send_file(output, download_name='analise_recebimentos.xlsx', as_attachment=True)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/clientes', methods=['GET'])
+@login_required
+@non_cashier_required
+def api_analytics_clientes():
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        sales = query.all()
+        clientes = {}
+        for s in sales:
+            nome = s.customer.name if s.customer else 'Desconhecido'
+            if nome not in clientes:
+                clientes[nome] = {'qtd': 0, 'total': 0}
+            clientes[nome]['qtd'] += 1
+            clientes[nome]['total'] += float(s.total)
+        clientes_ordenados = sorted(clientes.items(), key=lambda x: x[1]['total'], reverse=True)
+        labels = [c[0] for c in clientes_ordenados][:10]
+        valores = [c[1]['total'] for c in clientes_ordenados][:10]
+        detalhes = [
+            {'nome': c[0], 'qtd': c[1]['qtd'], 'total': c[1]['total']} for c in clientes_ordenados
+        ]
+        return jsonify({
+            'success': True,
+            'clientes': {
+                'labels': labels,
+                'valores': valores,
+                'detalhes': detalhes
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/clientes/export', methods=['GET'])
+@login_required
+@non_cashier_required
+def export_analytics_clientes():
+    try:
+        import io
+        import pandas as pd
+        from flask import send_file
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        sales = query.all()
+        clientes = {}
+        for s in sales:
+            nome = s.customer.name if s.customer else 'Desconhecido'
+            if nome not in clientes:
+                clientes[nome] = {'qtd': 0, 'total': 0}
+            clientes[nome]['qtd'] += 1
+            clientes[nome]['total'] += float(s.total)
+        clientes_ordenados = sorted(clientes.items(), key=lambda x: x[1]['total'], reverse=True)
+        data = [
+            {'Cliente': c[0], 'Qtd. Vendas': c[1]['qtd'], 'Total': c[1]['total']} for c in clientes_ordenados
+        ]
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Clientes')
+        output.seek(0)
+        return send_file(output, download_name='analise_clientes.xlsx', as_attachment=True)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/produtos', methods=['GET'])
+@login_required
+@non_cashier_required
+def api_analytics_produtos():
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = SaleItem.query.join(Sale)
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        items = query.all()
+        produtos = {}
+        for item in items:
+            nome = item.product.name if item.product else 'Desconhecido'
+            if nome not in produtos:
+                produtos[nome] = {'qtd': 0, 'total': 0}
+            produtos[nome]['qtd'] += item.quantity
+            produtos[nome]['total'] += float(item.subtotal)
+        # Ordenar por total vendido
+        produtos_ordenados = sorted(produtos.items(), key=lambda x: x[1]['qtd'], reverse=True)
+        labels = [p[0] for p in produtos_ordenados][:10]
+        valores = [p[1]['qtd'] for p in produtos_ordenados][:10]
+        detalhes = [
+            {'nome': p[0], 'qtd': p[1]['qtd'], 'total': p[1]['total']} for p in produtos_ordenados
+        ]
+        return jsonify({
+            'success': True,
+            'produtos': {
+                'labels': labels,
+                'valores': valores,
+                'detalhes': detalhes
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/produtos/export', methods=['GET'])
+@login_required
+@non_cashier_required
+def export_analytics_produtos():
+    try:
+        import io
+        import pandas as pd
+        from flask import send_file
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = SaleItem.query.join(Sale)
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        items = query.all()
+        produtos = {}
+        for item in items:
+            nome = item.product.name if item.product else 'Desconhecido'
+            if nome not in produtos:
+                produtos[nome] = {'qtd': 0, 'total': 0}
+            produtos[nome]['qtd'] += item.quantity
+            produtos[nome]['total'] += float(item.subtotal)
+        produtos_ordenados = sorted(produtos.items(), key=lambda x: x[1]['qtd'], reverse=True)
+        data = [
+            {'Produto': p[0], 'Quantidade': p[1]['qtd'], 'Total': p[1]['total']} for p in produtos_ordenados
+        ]
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Produtos')
+        output.seek(0)
+        return send_file(output, download_name='analise_produtos.xlsx', as_attachment=True)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/dashboard', methods=['GET'])
+@login_required
+@non_cashier_required
+def api_dashboard():
+    try:
+        # Filtros
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        sales = query.all()
+        faturamento_total = sum(float(s.total) for s in sales)
+        num_vendas = len(sales)
+        ticket_medio = faturamento_total / num_vendas if num_vendas > 0 else 0
+        # Vendas por dia
+        vendas_por_dia = {}
+        for s in sales:
+            dia = s.date.strftime('%d/%m')
+            vendas_por_dia[dia] = vendas_por_dia.get(dia, 0) + float(s.total)
+        vendas_por_dia_labels = sorted(vendas_por_dia.keys(), key=lambda d: datetime.strptime(d, '%d/%m'))
+        vendas_por_dia_valores = [vendas_por_dia[d] for d in vendas_por_dia_labels]
+        # Formas de pagamento
+        formas = ['dinheiro', 'cartao_credito', 'cartao_debito', 'pix', 'ticket_alimentacao']
+        formas_labels = ['Dinheiro', 'Cartão Crédito', 'Cartão Débito', 'PIX', 'Ticket Alimentação']
+        formas_dict = {f: 0 for f in formas}
+        for s in sales:
+            if s.payment_method in formas_dict:
+                formas_dict[s.payment_method] += float(s.total)
+        formas_valores = [formas_dict[f] for f in formas]
+        return jsonify({
+            'success': True,
+            'faturamento_total': faturamento_total,
+            'num_vendas': num_vendas,
+            'ticket_medio': ticket_medio,
+            'vendas_por_dia': {
+                'labels': vendas_por_dia_labels,
+                'valores': vendas_por_dia_valores
+            },
+            'formas_pagamento': {
+                'labels': formas_labels,
+                'valores': formas_valores
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/analytics/dashboard/export', methods=['GET'])
+@login_required
+@non_cashier_required
+def export_dashboard():
+    try:
+        import io
+        import pandas as pd
+        from flask import send_file
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        sales = query.all()
+        data = [
+            {
+                'ID': s.id,
+                'Data': s.date.strftime('%d/%m/%Y %H:%M'),
+                'Cliente': s.customer.name if s.customer else '-',
+                'Total': float(s.total),
+                'Forma de Pagamento': s.payment_method,
+                'Status': s.status
+            } for s in sales
+        ]
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Vendas')
+        output.seek(0)
+        return send_file(output, download_name='dashboard_vendas.xlsx', as_attachment=True)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@vendas_bp.route('/api/sales/list', methods=['GET'])
+@login_required
+@non_cashier_required
+def api_list_sales():
+    """Retorna vendas paginadas e filtradas"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = request.args.get('per_page', 25)
+        if per_page == 'all':
+            per_page = None
+        else:
+            per_page = int(per_page)
+
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        payment_method = request.args.get('payment_method')
+
+        query = Sale.query
+        if start_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Sale.date >= start)
+        if end_date:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            query = query.filter(Sale.date <= end)
+        if payment_method and payment_method != 'all':
+            query = query.filter(Sale.payment_method == payment_method)
+
+        query = query.order_by(Sale.date.desc())
+        if per_page:
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+            sales = pagination.items
+            total = pagination.total
+            pages = pagination.pages
+        else:
+            sales = query.all()
+            total = len(sales)
+            pages = 1
+
+        return jsonify({
+            'success': True,
+            'sales': [
+                {
+                    'id': s.id,
+                    'date': s.date.strftime('%Y-%m-%d %H:%M'),
+                    'customer': s.customer.name if s.customer else '-',
+                    'total': float(s.total),
+                    'payment_method': s.payment_method,
+                    'status': s.status
+                } for s in sales
+            ],
+            'total': total,
+            'pages': pages
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
         return jsonify({'success': False, 'error': str(e)})
 
 @vendas_bp.route('/vendas/nova')
@@ -283,17 +750,17 @@ def criar_venda():
             print(f"Erro ao atualizar saldo do cliente: {str(e)}")
             # Não interrompe o fluxo se falhar apenas a atualização do saldo
         
-    # Se for dinheiro, registra o pagamento e possível troco
-    elif data.get('payment_method') == 'dinheiro' and data.get('received_amount'):
+    # Se for dinheiro ou ticket alimentação, registra o pagamento e possível troco
+    elif data.get('payment_method') in ['dinheiro', 'ticket_alimentacao'] and data.get('received_amount'):
         try:
             received_amount = safe_decimal(data['received_amount'])
             change = received_amount - total if received_amount > total else Decimal('0')
-                
+            
             # Mostra valores para debug
             print(f"Valor recebido: {received_amount} (tipo: {type(received_amount)})")
             print(f"Total da venda: {total} (tipo: {type(total)})")
             print(f"Troco calculado: {change} (tipo: {type(change)})")
-                
+            
             # Atualiza a venda com informações de pagamento
             sale.received_amount = received_amount
             sale.change_amount = change
@@ -301,7 +768,7 @@ def criar_venda():
             db.session.rollback()
             return jsonify({
                 'success': False,
-                'error': f'Erro ao processar pagamento em dinheiro: {str(e)}'
+                'error': f'Erro ao processar pagamento em dinheiro ou ticket alimentação: {str(e)}'
             }), 400
     # Para cartão de crédito, débito e pix, apenas registramos o método de pagamento
     # que já foi definido ao criar a venda, sem processamento adicional
@@ -705,7 +1172,7 @@ def finalizar_venda():
             supervisor_id=current_user.id,
             user_id=current_user.id,  # Adiciona o usuário atual como operador
             total=total_amount,
-            date=datetime.now()
+            date=datetime.now(timezone('America/Sao_Paulo'))
         )
         
         # Associa a venda ao caixa aberto do operador
@@ -810,10 +1277,50 @@ def finalizar_venda():
             company = CompanyInfo.query.first()
             if company and company.auto_print:
                 receipt_id = sale.id
-                print_receipt(sale)
+                
+                # Tenta imprimir usando a impressão térmica primeiro
+                from utils.thermal_printer import print_sale_receipt
+                from utils.printer import print_receipt
+                
+                # Primeiro tenta a impressão térmica
+                try:
+                    result = print_sale_receipt(sale)
+                    if result:
+                        logging.info(f"Cupom impresso com sucesso usando impressão térmica para venda #{sale.id}")
+                        return jsonify({
+                            'success': True,
+                            'message': 'Venda finalizada com sucesso e cupom impresso',
+                            'sale_id': sale.id,
+                            'receipt_id': receipt_id
+                        })
+                except Exception as e:
+                    logging.error(f"Erro ao imprimir com impressão térmica: {str(e)}")
+                
+                # Se falhar, tenta o método PDF
+                try:
+                    result = print_receipt(sale)
+                    if result:
+                        logging.info(f"Cupom impresso com sucesso usando PDF para venda #{sale.id}")
+                        return jsonify({
+                            'success': True,
+                            'message': 'Venda finalizada com sucesso e cupom impresso',
+                            'sale_id': sale.id,
+                            'receipt_id': receipt_id
+                        })
+                except Exception as e:
+                    logging.error(f"Erro ao imprimir com PDF: {str(e)}")
+                    
+                # Se ambos os métodos falharem, continua sem impressão
+                logging.warning(f"Ambos os métodos de impressão falharam para venda #{sale.id}")
+                return jsonify({
+                    'success': True,
+                    'message': 'Venda finalizada com sucesso',
+                    'sale_id': sale.id,
+                    'receipt_id': receipt_id
+                })
         except Exception as e:
-            print(f"Erro ao tentar imprimir: {str(e)}")
-        
+            logging.error(f"Erro geral ao tentar imprimir: {str(e)}")
+            
         return jsonify({
             'success': True,
             'message': 'Venda finalizada com sucesso',
@@ -881,6 +1388,46 @@ def get_customer_modern(matricula):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@vendas_bp.route('/api/sales/<int:id>', methods=['DELETE'])
+@login_required
+def cancelar_venda(id):
+    """Exclui uma venda do banco de dados se permitido"""
+    try:
+        sale = Sale.query.get_or_404(id)
+
+        # Não permite excluir venda já paga
+        if sale.status == 'paid':
+            return jsonify({
+                'success': False,
+                'error': 'Não é possível excluir uma venda finalizada/paga.'
+            }), 400
+
+        # Devolve produtos ao estoque
+        for item in sale.items:
+            product = Product.query.get(item.product_id)
+            if product:
+                product.stock += item.quantity
+
+        # Exclui recebíveis relacionados à venda
+        if sale.customer:
+            for receivable in list(sale.customer.receivables):
+                if receivable.description and str(sale.id) in receivable.description:
+                    sale.customer.current_debt -= receivable.amount
+                    db.session.delete(receivable)
+
+        # Exclui os itens da venda
+        for item in list(sale.items):
+            db.session.delete(item)
+
+        # Exclui a venda
+        db.session.delete(sale)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Venda excluída com sucesso.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @vendas_bp.route('/api/auth/authorize', methods=['POST'])
 @login_required
 @non_cashier_required
@@ -923,6 +1470,28 @@ def autorizar_venda_modern():
             'success': False,
             'message': str(e)
         })
+
+@vendas_bp.route('/api/teste_endpoint', methods=['GET'])
+def teste_endpoint():
+    return jsonify({'success': True, 'msg': 'Blueprint vendas_bp ativo!'})
+
+@vendas_bp.route('/api/sales/update_type/<int:sale_id>', methods=['PUT'])
+@login_required
+def update_sale_type(sale_id):
+    print('>>> [DEBUG] update_sale_type endpoint chamado para sale_id:', sale_id)
+    """Atualiza o tipo de pagamento de uma venda"""
+    try:
+        data = request.get_json()
+        new_type = data.get('payment_method')
+        if not new_type:
+            return jsonify({'success': False, 'error': 'Tipo de pagamento não informado'}), 400
+        sale = Sale.query.get_or_404(sale_id)
+        sale.payment_method = new_type
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @vendas_bp.route('/api/contas_a_receber/cliente/<matricula>')
 @login_required
