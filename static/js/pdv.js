@@ -362,27 +362,54 @@ function adicionarProduto(codigo, quantidade) {
         .then(data => {
             if (data.success) {
                 const produto = data.product;
-                const item = {
-                    id: produto.id,
-                    codigo: produto.code,
-                    nome: produto.name,
-                    quantidade: quantidade,
-                    unidade: produto.unit,
-                    preco: produto.selling_price,
-                    total: quantidade * produto.selling_price
-                };
-                
-                // Atualizar produto atual na tela
-                atualizarProdutoAtual({
-                    codigo: produto.code,
-                    nome: produto.name,
-                    preco: produto.selling_price
-                });
-                
-                itens.push(item);
-                atualizarTabela();
-                atualizarTotal();
-                atualizarStatusCaixa();
+                // Buscar promoção ativa para o produto
+                fetch(`/promotions/api/promotions/active/${produto.id}`)
+                    .then(async resp => {
+                        let promoData = {success: false};
+                        try {
+                          promoData = await resp.json();
+                        } catch (e) {
+                          // resposta não é JSON (ex: erro 404)
+                          promoData = {success: false, error: 'Resposta inválida da API de promoção'};
+                        }
+                        return promoData;
+                    })
+                    .then(promoData => {
+                        let precoFinal = produto.selling_price;
+                        let infoPromo = '';
+                        if (promoData.success && promoData.promotion) {
+                            const promo = promoData.promotion;
+                            if (promo.discount_type === 'percent') {
+                                precoFinal = produto.selling_price * (1 - promo.discount_value / 100);
+                                infoPromo = `Promoção: -${promo.discount_value}%`;
+                            } else {
+                                precoFinal = Math.max(0, produto.selling_price - promo.discount_value);
+                                infoPromo = `Promoção: -R$ ${promo.discount_value}`;
+                            }
+                        }
+                        precoFinal = Math.round(precoFinal * 100) / 100;
+                        const item = {
+                            id: produto.id,
+                            codigo: produto.code,
+                            nome: produto.name,
+                            quantidade: quantidade,
+                            unidade: produto.unit,
+                            preco: precoFinal,
+                            total: quantidade * precoFinal,
+                            infoPromo: infoPromo
+                        };
+                        // Atualizar produto atual na tela, mostrando promoção se houver
+                        atualizarProdutoAtual({
+                            codigo: produto.code,
+                            nome: produto.name,
+                            preco: precoFinal,
+                            infoPromo: infoPromo
+                        });
+                        itens.push(item);
+                        atualizarTabela();
+                        atualizarTotal();
+                        atualizarStatusCaixa();
+                    });
             } else {
                 alert('Produto não encontrado!');
             }
@@ -959,7 +986,7 @@ async function confirmarVenda() {
             }
         }
         
-        const response = await fetch('/api/vendas', {
+        const response = await fetch('/vendas/api/vendas', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -986,6 +1013,15 @@ async function confirmarVenda() {
                 if (clienteInfoElement) {
                     clienteInfoElement.textContent = 'Nenhum';
                 }
+                
+                // Limpa o produto atual
+                const nomeProduto = document.getElementById('nome-produto-atual');
+                const codigoProduto = document.getElementById('codigo-produto-atual');
+                const precoProduto = document.getElementById('preco-produto-atual');
+                
+                if (nomeProduto) nomeProduto.textContent = "Nenhum produto selecionado";
+                if (codigoProduto) codigoProduto.textContent = "--";
+                if (precoProduto) precoProduto.textContent = "R$ 0,00";
                 
                 // Fecha o modal
                 if (modalFinalizarVenda) {
@@ -1172,16 +1208,24 @@ function atualizarStatusCaixa() {
 // Atualizar informações do produto atual
 function atualizarProdutoAtual(produto) {
     if (!produto) return;
-    
+
     ultimoProduto = produto;
-    
+
     const nomeProduto = document.getElementById('nome-produto-atual');
     const codigoProduto = document.getElementById('codigo-produto-atual');
     const precoProduto = document.getElementById('preco-produto-atual');
-    
+    const precoPromocionalProduto = document.getElementById('preco-promocional-produto-atual');
+
     if (nomeProduto) nomeProduto.textContent = produto.nome;
     if (codigoProduto) codigoProduto.textContent = `Código: ${produto.codigo}`;
     if (precoProduto) precoProduto.textContent = `R$ ${formatarValor(produto.preco)}`;
+    if (precoPromocionalProduto && produto.infoPromo) {
+        precoPromocionalProduto.textContent = `R$ ${formatarValor(produto.precoPromocional)}`;
+        precoPromocionalProduto.style.display = 'block';
+    } else if (precoPromocionalProduto) {
+        precoPromocionalProduto.textContent = '';
+        precoPromocionalProduto.style.display = 'none';
+    }
 }
 
 // Formatar valor para exibição

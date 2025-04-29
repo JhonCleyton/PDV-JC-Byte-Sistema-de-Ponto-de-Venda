@@ -280,7 +280,7 @@ function testarImpressao() {
         icon: 'info',
         allowOutsideClick: false,
         showConfirmButton: false,
-        onBeforeOpen: () => {
+        didOpen: () => {
             Swal.showLoading();
         }
     });
@@ -289,7 +289,13 @@ function testarImpressao() {
     const printerName = document.getElementById('printer_name').value;
     
     // Chamar a API de teste de impressão
-    fetch('/api/test_print')
+    fetch('/api/test-print', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ printer_name: printerName })
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {

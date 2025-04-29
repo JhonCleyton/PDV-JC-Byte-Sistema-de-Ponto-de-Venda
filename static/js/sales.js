@@ -299,6 +299,13 @@ async function finishSale() {
         
         if (data.success) {
             alert('Venda realizada com sucesso!');
+            // Abrir cupom para impressão local
+            const printWindow = window.open(`/cupom/${data.sale_id || data.id || data.data?.id}`, '_blank');
+            if (printWindow) {
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
             clearSale();
         } else {
             alert(data.error || 'Erro ao realizar venda');
@@ -328,11 +335,19 @@ function clearSale() {
 
 // Função para visualizar detalhes da venda
 function viewSale(id) {
-    fetch(`/api/sales/${id}`)
-        .then(response => response.json())
-        .then(response => {
-            if (response.success) {
-                const sale = response.data;
+    fetch(`/vendas/api/sales/${id}`)
+        .then(async resp => {
+            let data = {success: false};
+            try {
+                data = await resp.json();
+            } catch (e) {
+                data = {success: false, error: 'Resposta inválida da API de venda'};
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                const sale = data.data;
                 
                 // Calcula o total da venda somando os subtotais dos itens
                 const total = sale.items.reduce((acc, item) => acc + (item.subtotal || 0), 0);
@@ -431,26 +446,12 @@ function viewSale(id) {
 
 // Função para imprimir venda
 function printSale(id) {
-    fetch(`/api/sales/${id}/print`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mostra mensagem de sucesso
-            alert('Cupom enviado para impressão!');
-        } else {
-            // Mostra mensagem de erro
-            alert('Erro ao imprimir: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Erro ao imprimir:', error);
-        alert('Erro ao imprimir. Por favor, tente novamente.');
-    });
+    // Abre o cupom em uma nova aba para impressão local
+    const printWindow = window.open(`/cupom/${id}`, '_blank');
+    // Se quiser garantir que o print seja chamado automaticamente:
+    printWindow.onload = function() {
+        printWindow.print();
+    };
 }
 
 // Eventos
