@@ -13,6 +13,7 @@ from routes.contas_a_pagar import contas_a_pagar_bp
 from routes.nf import nf_bp
 from routes.notifications import notifications_bp
 from routes.dashboard import dashboard_bp
+from routes.promotions import bp as promotions_bp
 from routes.users import users_bp
 from routes.clientes import clientes_bp
 from routes.settings import settings_bp
@@ -23,15 +24,14 @@ from datetime import timedelta
 from werkzeug.security import generate_password_hash
 from notifications_manager import check_notifications
 from flask_cors import CORS
+from config import Config
+import os
 
 app = Flask(__name__)
 CORS(app)  # Habilita CORS para todas as rotas
 
 # Configurações
-app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui'  # Altere para uma chave secreta segura
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pdv.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)  # Sessão expira em 8 horas
+app.config.from_object(Config)
 
 # Inicialização do banco de dados
 db.init_app(app)
@@ -54,12 +54,13 @@ app.register_blueprint(products_bp)
 app.register_blueprint(categories_bp)
 app.register_blueprint(suppliers_bp)
 app.register_blueprint(customers_bp)
-app.register_blueprint(vendas_bp)
+app.register_blueprint(vendas_bp, url_prefix='/vendas')
 app.register_blueprint(contas_a_receber_bp)
 app.register_blueprint(contas_a_pagar_bp)
 app.register_blueprint(nf_bp)
 app.register_blueprint(notifications_bp)
 app.register_blueprint(dashboard_bp, url_prefix='/management')
+app.register_blueprint(promotions_bp)
 app.register_blueprint(clientes_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(management, url_prefix='/management')
@@ -103,30 +104,28 @@ def init_admin():
             print('Usuário caixa criado')
 
 def init_company_info():
-    """Cria a tabela e registro inicial de company_info"""
+    """Inicializa as informações da empresa se não existirem"""
     with app.app_context():
-        # Verifica se já existe um registro
         company = CompanyInfo.query.first()
         if not company:
-            # Cria um registro inicial
             company = CompanyInfo(
-                name='',
-                cnpj='',
-                ie='',
-                address='',
-                city='',
-                state='',
-                zip_code='',
-                phone='',
-                email='',
-                printer_name='',
-                print_header='',
-                print_footer='',
+                name="Minha Empresa",
+                cnpj="",
+                ie="",
+                address="",
+                city="",
+                state="",
+                zip_code="",
+                phone="",
+                email="",
+                printer_name="",
+                print_header="",
+                print_footer="",
                 auto_print=True
             )
             db.session.add(company)
             db.session.commit()
-            print('Registro inicial de company_info criado')
+            print('Informações da empresa inicializadas')
 
 # Rotas principais
 @app.route('/')

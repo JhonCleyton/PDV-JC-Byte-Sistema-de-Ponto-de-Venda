@@ -16,7 +16,6 @@ psycopg2-binary==2.9.9  # Para suporte a PostgreSQL
 # Utilidades para manipulação de dados
 python-dateutil==2.8.2
 python-dotenv==1.0.0
-decimal==1.70
 pandas==2.1.3
 numpy==1.26.4
 
@@ -25,6 +24,7 @@ fpdf==1.7.2
 reportlab==4.0.4
 pdfkit==1.0.0
 qrcode==7.4.2
+pywin32
 
 # Suporte a Excel
 openpyxl==3.1.2
@@ -33,8 +33,6 @@ et-xmlfile==1.1.0
 # Manipulação de imagens
 Pillow==10.0.0
 
-# Integração com Windows
-pywin32==308
 
 # Comunicação e APIs
 requests==2.31.0

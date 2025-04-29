@@ -19,9 +19,56 @@ O PDV JC Byte é um sistema completo de Ponto de Venda (PDV) desenvolvido para a
 >
 > Certifique-se de manter os mesmos formatos de arquivo para garantir compatibilidade com todo o sistema.
 
+### 🆕 Novidades e Melhorias Recentes
+
+- **Promoções e Campanhas:**
+  - Criação, edição e gestão de promoções e campanhas de desconto para produtos.
+  - Aplicação automática de descontos promocionais no PDV Professional.
+  - Visualização de promoções ativas e histórico de campanhas.
+- **Edição de Vendas:**
+  - Alteração do tipo de venda (dinheiro, cartão, pix, ticket) diretamente na tela de gerenciamento.
+  - Edição de descontos aplicados em vendas e itens.
+  - Possibilidade de editar produtos de uma venda.
+- **Páginas Analíticas Avançadas:**
+  - Dashboard com visão geral em tempo real.
+  - Relatórios detalhados de vendas, produtos, finanças e clientes.
+  - Análise de produtos mais vendidos e rentáveis.
+  - Nova página: **Análise de Descontos Concedidos** – visualize todos os descontos aplicados, por produto, operador e período.
+    - **Gráficos Analíticos:** Acima da lista de descontos, são exibidos gráficos dinâmicos (utilizando Chart.js) mostrando o total de descontos concedidos por produto e por operador. Estes gráficos são atualizados automaticamente conforme o filtro de pesquisa.
+  - Exportação de relatórios para Excel.
+- **Interface e Usabilidade:**
+  - Exibição clara de promoções e descontos ao operador.
+  - Filtros avançados em todas as páginas analíticas.
+  - Tratamento robusto de erros de API e integração frontend/backend.
+
+---
+
+- **Promoções Automáticas:**
+  - O sistema aplica automaticamente preços promocionais ativos ao adicionar produtos no PDV Professional.
+  - O operador visualiza informações da promoção e preço promocional diretamente na interface de venda.
+- **Correção e Padronização de Endpoints:**
+  - Todos os endpoints relacionados a vendas agora usam o prefixo `/vendas` (ex: `/vendas/api/vendas`, `/vendas/api/sales/<id>`), garantindo integração correta entre frontend e backend.
+- **Tratamento Robusto de Erros de API:**
+  - O sistema lida com respostas inesperadas (ex: erro 404 ou HTML em vez de JSON) sem quebrar a interface, exibindo mensagens amigáveis ao usuário.
+- **Ajustes em Exclusão e Visualização de Vendas:**
+  - As ações de visualizar e cancelar/excluir vendas utilizam os endpoints corretos, eliminando erros 404.
+- **Interface Aprimorada:**
+  - Promoções e descontos aparecem de forma clara ao operador, melhorando a experiência de uso.
+
+---
+
 ### 🌟 Principais Funcionalidades
 
 - **Gestão de Vendas**
+  - Registro rápido de vendas com código de barras
+  - Múltiplas interfaces PDV (Professional, Modern e Standard)
+  - Impressão de cupons com nome do operador
+  - Múltiplas formas de pagamento (dinheiro, cartão de crédito, débito, PIX)
+  - Parcelamento de vendas e controle de crédito
+  - Confirmação de saída para evitar perda de vendas
+  - Relógio em tempo real integrado
+  - **Aplicação automática de promoções e descontos**
+  - **Exibição de promoções e preços promocionais ao operador**
   - Registro rápido de vendas com código de barras
   - Múltiplas interfaces PDV (Professional, Modern e Standard)
   - Impressão de cupons com nome do operador

@@ -1,0 +1,7 @@
+Para criar um atalho na área de trabalho (forma mais fácil de usar):
+
+1º Clique com o botão direito na área de trabalho
+2º Selecione Novo > Atalho
+3º No campo de localização, cole este texto:
+
+wscript "caminho do arquivo\PDV\run_hidden.vbs" "caminho_do_arquivo\PDV\iniciar.py"
