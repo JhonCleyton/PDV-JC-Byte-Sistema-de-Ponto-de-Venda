@@ -24,12 +24,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for user in users %}
+                        {% set role_map = {'caixa': 'Caixa', 'admin': 'Administrador', 'manager': 'Gerente', 'supervisor': 'Supervisor'} %}
+{% for user in users %}
                         <tr>
                             <td>{{ user.name }}</td>
                             <td>{{ user.username }}</td>
                             <td>{{ user.email }}</td>
-                            <td>{{ user.role }}</td>
+                            {#- Defina um dicionário de tradução de funções no início do arquivo #}
+{% set role_map = {'caixa': 'Caixa', 'admin': 'Administrador', 'manager': 'Gerente', 'supervisor': 'Supervisor'} %}
+<td>{{ role_map.get(user.role, user.role) }}</td>
                             <td>
                                 <span class="badge {% if user.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
                                     {{ user.status }}

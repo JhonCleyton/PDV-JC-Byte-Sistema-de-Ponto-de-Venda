@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Dashboard de Vendas</h1>
+    <form id="dashboard-filtros" class="row g-3 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="dashboard-data-inicio" class="form-label mb-0">Data Inicial</label>
+            <input type="date" class="form-control" id="dashboard-data-inicio" name="start_date">
+        </div>
+        <div class="col-auto">
+            <label for="dashboard-data-fim" class="form-label mb-0">Data Final</label>
+            <input type="date" class="form-control" id="dashboard-data-fim" name="end_date">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" class="btn btn-success" id="btn-export-dashboard">
+                <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+            </button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Faturamento Total</h5>
+                    <h3 id="dashboard-faturamento">R$ 0,00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Número de Vendas</h5>
+                    <h3 id="dashboard-num-vendas">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Ticket Médio</h5>
+                    <h3 id="dashboard-ticket-medio">R$ 0,00</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Vendas por Dia</h5>
+                    <canvas id="grafico-vendas-dia"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Formas de Pagamento</h5>
+                    <canvas id="grafico-pagamentos"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/vendas_dashboard.js') }}"></script>
+{% endblock %}

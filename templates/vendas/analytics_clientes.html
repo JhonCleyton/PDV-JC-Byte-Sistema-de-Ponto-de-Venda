@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Análise de Clientes</h1>
+    <form id="filtros-clientes" class="row g-3 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="clientes-data-inicio" class="form-label mb-0">Data Inicial</label>
+            <input type="date" class="form-control" id="clientes-data-inicio" name="start_date">
+        </div>
+        <div class="col-auto">
+            <label for="clientes-data-fim" class="form-label mb-0">Data Final</label>
+            <input type="date" class="form-control" id="clientes-data-fim" name="end_date">
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" class="btn btn-success" id="btn-export-clientes">
+                <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+            </button>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Clientes que Mais Compram</h5>
+                    <canvas id="grafico-clientes"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Resumo</h5>
+                    <table class="table table-sm" id="tabela-clientes">
+                        <thead><tr><th>Cliente</th><th>Qtd. Vendas</th><th>Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/vendas_analytics_clientes.js') }}"></script>
+{% endblock %}

@@ -135,7 +135,7 @@
                     <p>Total: R$ {{ "%.2f"|format(total_receivables) }}</p>
                     <p>Recebido: R$ {{ "%.2f"|format(received) }}</p>
                     <p>Pendente: R$ {{ "%.2f"|format(pending_receivables) }}</p>
-                    <p class="text-danger">Vencido: R$ {{ "%.2f"|format(total_overdue) }}</p>
+                    <p class="text-danger">Vencido: R$ {{ "%.2f"|format(total_overdue_payables) }}</p>
                 </div>
             </div>
         </div>
@@ -153,6 +153,7 @@
                     <p>Total: R$ {{ "%.2f"|format(total_payables) }}</p>
                     <p>Pago: R$ {{ "%.2f"|format(paid) }}</p>
                     <p>Pendente: R$ {{ "%.2f"|format(pending_payables) }}</p>
+<p class="text-danger">Vencido: R$ {{ "%.2f"|format(total_overdue_payables) }}</p>
                 </div>
             </div>
         </div>
@@ -192,13 +193,13 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         var ctx = document.getElementById('salesChart').getContext('2d');
-        var salesChart = new Chart(ctx, {
+        window.salesChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: {{ last_12_months|tojson }},
                 datasets: [{
                     label: 'Vendas',
-                    data: {{ sales_by_month|tojson }},
+                    data: {{ sales_by_month|map('float')|list|tojson }},
                     backgroundColor: 'rgba(78, 115, 223, 0.05)',
                     borderColor: 'rgba(78, 115, 223, 1)',
                     pointRadius: 3,
@@ -246,9 +247,9 @@
                     },
                     tooltip: {
                         backgroundColor: "rgb(255,255,255)",
-                        bodyFontColor: "#858796",
+                        bodyColor: "#000",
                         titleMarginBottom: 10,
-                        titleFontColor: '#6e707e',
+                        titleColor: "#000",
                         titleFontSize: 14,
                         borderColor: '#dddfeb',
                         borderWidth: 1,
@@ -264,8 +265,10 @@
                                 if (label) {
                                     label += ': ';
                                 }
-                                if (context.parsed.y !== null) {
+                                if (typeof context.parsed.y === 'number') {
                                     label += 'R$ ' + context.parsed.y.toFixed(2);
+                                } else {
+                                    label += 'Sem dados';
                                 }
                                 return label;
                             }
@@ -315,9 +318,10 @@
                         callbacks: {
                             label: function(context) {
                                 var label = context.label || '';
-                                var value = context.raw;
-                                var total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                var percentage = Math.round((value / total) * 100);
+                                var value = Number(context.raw) || 0;
+                                var dataArr = context.chart.data.datasets[0].data.map(function(x) { return Number(x) || 0; });
+                                var total = dataArr.reduce((a, b) => a + b, 0);
+                                var percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                 return label + ': ' + value + ' unidades (' + percentage + '%)';
                             }
                         }

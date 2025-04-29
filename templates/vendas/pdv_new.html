@@ -40,6 +40,16 @@ function buscarCliente() {
                 document.getElementById('limiteDisponivel').textContent = 
                     (clienteAtual.credit_limit - clienteAtual.current_debt).toFixed(2);
                 document.getElementById('infoCliente').classList.remove('d-none');
+                
+                const selectFormaPagamento = document.getElementById('formaPagamento');
+                selectFormaPagamento.innerHTML = `
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="cartao_debito">Cartão de Débito</option>
+                    <option value="cartao_credito">Cartão de Crédito</option>
+                    <option value="pix">PIX</option>
+                    <option value="crediario">Crediário</option>
+                    <option value="ticket_alimentacao">Ticket (Alimentação)</option>
+                `;
             } else {
                 alert('Cliente não encontrado');
                 document.getElementById('infoCliente').classList.add('d-none');

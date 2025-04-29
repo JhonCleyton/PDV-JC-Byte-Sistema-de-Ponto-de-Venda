@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Análise de Descontos Concedidos</h1>
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="filtro-descontos" class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label for="filtro-produto" class="form-label mb-0">Produto</label>
+                    <input type="text" class="form-control" id="filtro-produto" name="produto" placeholder="Nome ou código">
+                </div>
+                <div class="col-auto">
+                    <label for="filtro-data-inicio" class="form-label mb-0">Data Inicial</label>
+                    <input type="date" class="form-control" id="filtro-data-inicio" name="start_date">
+                </div>
+                <div class="col-auto">
+                    <label for="filtro-data-fim" class="form-label mb-0">Data Final</label>
+                    <input type="date" class="form-control" id="filtro-data-fim" name="end_date">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-body">
+            <div id="discount-charts"></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="tabela-descontos">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>ID Venda</th>
+                            <th>Produto</th>
+                            <th>Promoção</th>
+                            <th>Valor Original</th>
+                            <th>Valor Promo</th>
+                            <th>Diferença</th>
+                            <th>Desconto (%)</th>
+                            <th>Operador</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dados dinâmicos via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/discounts_charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/discounts_analytics.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Comparativo de Períodos</h1>
+    <form id="filtros-comparativo" class="row g-3 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="comparativo-data-inicio1" class="form-label mb-0">Período 1 - Início</label>
+            <input type="date" class="form-control" id="comparativo-data-inicio1" name="start_date1">
+        </div>
+        <div class="col-auto">
+            <label for="comparativo-data-fim1" class="form-label mb-0">Fim</label>
+            <input type="date" class="form-control" id="comparativo-data-fim1" name="end_date1">
+        </div>
+        <div class="col-auto">
+            <label for="comparativo-data-inicio2" class="form-label mb-0">Período 2 - Início</label>
+            <input type="date" class="form-control" id="comparativo-data-inicio2" name="start_date2">
+        </div>
+        <div class="col-auto">
+            <label for="comparativo-data-fim2" class="form-label mb-0">Fim</label>
+            <input type="date" class="form-control" id="comparativo-data-fim2" name="end_date2">
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" class="btn btn-success" id="btn-export-comparativo">
+                <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+            </button>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Comparar</button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Comparativo de Faturamento</h5>
+                    <canvas id="grafico-comparativo"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Resumo</h5>
+                    <table class="table table-sm" id="tabela-comparativo">
+                        <thead><tr><th>Período</th><th>Vendas</th><th>Faturamento</th><th>Ticket Médio</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/vendas_analytics_comparativo.js') }}"></script>
+{% endblock %}

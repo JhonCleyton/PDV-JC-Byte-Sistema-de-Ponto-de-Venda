@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Análise de Produtos</h1>
+    <form id="filtros-produtos" class="row g-3 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="produtos-data-inicio" class="form-label mb-0">Data Inicial</label>
+            <input type="date" class="form-control" id="produtos-data-inicio" name="start_date">
+        </div>
+        <div class="col-auto">
+            <label for="produtos-data-fim" class="form-label mb-0">Data Final</label>
+            <input type="date" class="form-control" id="produtos-data-fim" name="end_date">
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" class="btn btn-success" id="btn-export-produtos">
+                <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+            </button>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Produtos Mais Vendidos</h5>
+                    <canvas id="grafico-produtos"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="card-title mb-0">Resumo</h5>
+    <select id="produtos-por-pagina" class="form-select form-select-sm w-auto ms-2">
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="all">Todas</option>
+    </select>
+</div>
+                    <table class="table table-sm" id="tabela-produtos">
+                        <thead><tr><th>Produto</th><th>Qtd.</th><th>Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/vendas_analytics_produtos.js') }}"></script>
+{% endblock %}

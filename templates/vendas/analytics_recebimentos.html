@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Análise de Recebimentos</h1>
+    <form id="filtros-recebimentos" class="row g-3 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="recebimentos-data-inicio" class="form-label mb-0">Data Inicial</label>
+            <input type="date" class="form-control" id="recebimentos-data-inicio" name="start_date">
+        </div>
+        <div class="col-auto">
+            <label for="recebimentos-data-fim" class="form-label mb-0">Data Final</label>
+            <input type="date" class="form-control" id="recebimentos-data-fim" name="end_date">
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" class="btn btn-success" id="btn-export-recebimentos">
+                <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+            </button>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recebimentos por Forma de Pagamento</h5>
+                    <canvas id="grafico-recebimentos"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Resumo</h5>
+                    <table class="table table-sm" id="tabela-recebimentos">
+                        <thead><tr><th>Forma</th><th>Qtd. Vendas</th><th>Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/vendas_analytics_recebimentos.js') }}"></script>
+{% endblock %}

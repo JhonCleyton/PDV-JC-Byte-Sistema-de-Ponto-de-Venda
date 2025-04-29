@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <h2>Promoções e Campanhas</h2>
+    <a href="{{ url_for('promotions.create_promotion') }}" class="btn btn-success mb-3">Nova Promoção</a>
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Ativa?</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for promo in promotions %}
+            <tr>
+                <td>{{ promo.name }}</td>
+                <td>{{ 'Percentual' if promo.discount_type == 'percent' else 'Fixo' }}</td>
+                <td>{{ promo.discount_value }}{% if promo.discount_type == 'percent' %}%{% endif %}</td>
+                <td>{{ promo.start_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ promo.end_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ 'Sim' if promo.is_active() else 'Não' }}</td>
+                <td>
+                    <a href="{{ url_for('promotions.edit_promotion', promo_id=promo.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                    <form action="{{ url_for('promotions.delete_promotion', promo_id=promo.id) }}" method="post" style="display:inline-block" onsubmit="return confirm('Tem certeza?');">
+                        <button class="btn btn-danger btn-sm">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7">Nenhuma promoção cadastrada.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

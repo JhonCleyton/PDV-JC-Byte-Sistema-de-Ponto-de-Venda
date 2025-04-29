@@ -82,6 +82,7 @@
                             <p><strong>Crédito:</strong> R$ {{ "%.2f"|format(relatorio.vendas_credito) }}</p>
                             <p><strong>Débito:</strong> R$ {{ "%.2f"|format(relatorio.vendas_debito) }}</p>
                             <p><strong>Crediário:</strong> R$ {{ "%.2f"|format(relatorio.vendas_crediario) }}</p>
+                            <p><strong>Ticket (Alimentação):</strong> R$ {{ "%.2f"|format(relatorio.vendas_ticket_alimentacao) }}</p>
                         </div>
                         <div class="col-md-6">
                             <div id="graficoPagamentos" style="height: 200px;"></div>
@@ -168,7 +169,8 @@ document.addEventListener('DOMContentLoaded', function() {
         pix: {{ relatorio.vendas_pix }},
         credito: {{ relatorio.vendas_credito }},
         debito: {{ relatorio.vendas_debito }},
-        crediario: {{ relatorio.vendas_crediario }}
+        crediario: {{ relatorio.vendas_crediario }},
+        ticket: {{ relatorio.vendas_ticket_alimentacao }}
     };
     
     const optionsPagamentos = {
@@ -177,13 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dadosVendas.pix,
             dadosVendas.credito,
             dadosVendas.debito,
-            dadosVendas.crediario
+            dadosVendas.crediario,
+            dadosVendas.ticket
         ],
         chart: {
             type: 'donut',
             height: 200
         },
-        labels: ['Dinheiro', 'PIX', 'Crédito', 'Débito', 'Crediário'],
+        labels: ['Dinheiro', 'PIX', 'Crédito', 'Débito', 'Crediário', 'Ticket (Alimentação)'],
         responsive: [{
             breakpoint: 480,
             options: {
@@ -195,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }],
-        colors: ['#28a745', '#17a2b8', '#fd7e14', '#6f42c1', '#dc3545']
+        colors: ['#28a745', '#17a2b8', '#fd7e14', '#6f42c1', '#dc3545', '#ffb700']
     };
 
     // Renderizar gráficos se tiver dados

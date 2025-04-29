@@ -82,6 +82,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/sales_manage.js') }}"></script>
 <script>
 function filterSales() {
     const filters = {
@@ -108,10 +109,13 @@ function filterSales() {
                         <td>${formatPaymentMethod(sale.payment_method)}</td>
                         <td>${formatStatus(sale.status)}</td>
                         <td>
-                            <button class="btn btn-sm btn-info" onclick="printSale(${sale.id})">
-                                <i class="fas fa-print"></i>
-                            </button>
-                        </td>
+    <button class="btn btn-sm btn-info" onclick="printSale(${sale.id})">
+        <i class="fas fa-print"></i>
+    </button>
+    <button class="btn btn-sm btn-warning" onclick="openEditTypeModal(${sale.id}, '${sale.payment_method}')">
+        <i class="fas fa-edit"></i> Editar Tipo
+    </button>
+</td>
                     `;
                     tbody.appendChild(row);
                 });

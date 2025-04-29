@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <h2>Editar Promoção/Campanha</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label>Nome</label>
+            <input type="text" name="name" class="form-control" value="{{ promo.name }}" required>
+        </div>
+        <div class="mb-3">
+            <label>Descrição</label>
+            <textarea name="description" class="form-control">{{ promo.description }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label>Tipo de Desconto</label>
+            <select name="discount_type" class="form-control" required>
+                <option value="percent" {% if promo.discount_type == 'percent' %}selected{% endif %}>Percentual (%)</option>
+                <option value="fixed" {% if promo.discount_type == 'fixed' %}selected{% endif %}>Valor Fixo (R$)</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Valor do Desconto</label>
+            <input type="number" name="discount_value" class="form-control" value="{{ promo.discount_value }}" step="0.01" required>
+        </div>
+        <div class="mb-3">
+            <label>Data de Início</label>
+            <input type="datetime-local" name="start_date" class="form-control" value="{{ promo.start_date.strftime('%Y-%m-%dT%H:%M') }}" required>
+        </div>
+        <div class="mb-3">
+            <label>Data de Fim</label>
+            <input type="datetime-local" name="end_date" class="form-control" value="{{ promo.end_date.strftime('%Y-%m-%dT%H:%M') }}" required>
+        </div>
+        <div class="mb-3">
+    <label>Produtos da Promoção</label>
+    <input type="text" class="form-control" id="productSearchInput" placeholder="Buscar por nome ou código">
+    <ul class="list-group mt-1" id="productSearchResults"></ul>
+    <div id="selectedProducts" class="mt-2"></div>
+    <input type="hidden" name="products" id="selectedProductsInput">
+</div>
+<div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="active" id="active" {% if promo.active %}checked{% endif %}>
+            <label class="form-check-label" for="active">Ativa</label>
+        </div>
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{{ url_for('promotions.list_promotions') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/promotion_products_select.js') }}"></script>
+<script src="{{ url_for('static', filename='js/products.js') }}"></script>
+{% endblock %}
+{% endblock %}
